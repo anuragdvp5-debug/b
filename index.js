@@ -24,10 +24,9 @@ app.post('/connect', (req, res) => {
     // 2. Active status check
     if (!keyData.active) return res.json({ "status": false, "message": "Key Inactive! Contact Admin." });
 
-    // 3. Expiry Check
-    const today = new Date();
-    const expiryDate = new Date(keyData.expiry);
-    if (today > expiryDate) {
+    // 3. Expiry Check (Current date comparison)
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    if (today > keyData.expiry) {
         return res.json({ "status": false, "message": "Key has expired! Contact Admin." });
     }
 
