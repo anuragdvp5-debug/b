@@ -9,8 +9,8 @@ app.use(express.urlencoded({ extended: true }));
 // Yahan tumhari keys hain. 
 // 'lockedDevice' ko 'null' rakhna, jab user login karega toh ye apne aap device ID se bhar jayega.
 const KEYS = {
-    "anurag": { active: true, expiry: "2099-12-31", lockedDevice: null },
-    "user_dost": { active: true, expiry: "2026-08-30", lockedDevice: null },
+    "anurag1": { active: true, expiry: "2099-12-31", lockedDevice: null },
+    "anurag2": { active: true, expiry: "2026-08-30", lockedDevice: null },
     "sachin": { active: true, expiry: "2026-08-30", lockedDevice: null }
 };
 
