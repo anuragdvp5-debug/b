@@ -11,6 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 const KEYS = {
     "anurag": { active: true, expiry: "2099-12-31", lockedDevice: null },
     "user_dost": { active: true, expiry: "2026-08-30", lockedDevice: null }
+    "sachin": { active: true, expiry: "2026-08-30", lockedDevice: null }
 };
 
 app.get('/', (req, res) => {
