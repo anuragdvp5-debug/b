@@ -6,7 +6,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const KEYS = {
     "anurag1": { active: true, expiry: "2099-12-31", lockedDevice: null },
-    "anurag3": { active: true, expiry: "2026-06-20", lockedDevice: null }, // Example: Iski date nikal gayi hai
+    "anurag3": { active: true, expiry: "2026-06-26", lockedDevice: null }, // Example: Iski date nikal gayi hai
     "sachin": { active: true, expiry: "2026-08-30", lockedDevice: null }
 };
 
