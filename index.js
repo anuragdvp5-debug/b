@@ -1,8 +1,10 @@
 const express = require('express');
 const app = express();
-app.use(express.json());
 
-// Key ab sirf "anurag" hai
+// Ye dono lines zaroori hain taaki JSON aur Form-data dono kaam karein
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 const MY_VALID_KEY = "anurag";
 
 app.get('/', (req, res) => {
@@ -10,10 +12,12 @@ app.get('/', (req, res) => {
 });
 
 app.post('/connect', (req, res) => {
-    // Injector se aane wala data check karo
-    const clientKey = req.body.key; 
+    // Screenshot ke mutabik field ka naam 'user_key' hai
+    const clientKey = req.body.user_key; 
+    
+    // Debugging: Agar abhi bhi error aaye, toh Render ke Logs mein ye dikhega
+    console.log("Request received, user_key:", clientKey);
 
-    // Validation Logic
     if (clientKey === MY_VALID_KEY) {
         res.json({
             "status": true,
@@ -39,7 +43,6 @@ app.post('/connect', (req, res) => {
             }
         });
     } else {
-        // Agar key galat hai toh status false bhej do
         res.json({
             "status": false,
             "message": "Invalid Key! Access Denied."
