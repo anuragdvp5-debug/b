@@ -9,7 +9,7 @@ const KEYS = {
     "anurag3": { type: "pro", active: true, expiry: "2026-06-26", lockedDevice: null },
     "sachin": { type: "pro", active: true, expiry: "2026-08-30", lockedDevice: null },
     // TRIAL KEY: 500 device limit, 1 din ki expiry
-    "AKTEAM": { type: "trial", active: true, expiry: "2026-06-27", maxDevices: 500, usedDevices: [] }
+    "AKTEAM": { type: "trial", active: true, expiry: "2026-06-24", maxDevices: 500, usedDevices: [] }
 };
 
 app.post('/connect', (req, res) => {
@@ -55,7 +55,7 @@ app.post('/connect', (req, res) => {
         "data": {
             "real": userKey,
             "token": "8117e9b001fb568b9279eccf5a64e08d",
-            "modname": "Aryanispe Related",
+            "modname": "Anurag Related",
             "mod_status": "Safe",
             "expired_date": keyData.expiry,
             "device": deviceId
