@@ -54,14 +54,7 @@ app.post('/connect', (req, res) => {
 
     res.json({
         "status": true,
-        "data": { 
-            "real": userKey, 
-            "token": "8117e9b001fb568b9279eccf5a64e08d", 
-            "modname": "CRACKED BY ANURAG | JOIN TG: t.me/anuragdvp", 
-            "mod_status": "Safe", 
-            "expired_date": keyData.expiry, 
-            "device": deviceId 
-        }
+        "data": { "real": userKey, "token": "8117e9b001fb568b9279eccf5a64e08d", "modname": "Anurag Related", "mod_status": "Safe", "expired_date": keyData.expiry, "device": deviceId }
     });
 });
 
