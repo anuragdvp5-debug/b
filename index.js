@@ -5,9 +5,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const KEYS = {
-    "anurag1": { type: "pro", active: true, expiry: "2099-12-31", lockedDevice: null },
-    "anurag3": { type: "pro", active: true, expiry: "2026-06-26", lockedDevice: null },
-    "sachin": { type: "pro", active: true, expiry: "2026-08-30", lockedDevice: null },
+    "anurag1": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    "anurag3": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    "sachin": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    "fuck": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
     // TRIAL KEY: 500 device limit, 1 din ki expiry
     "AKTEAM": { type: "trial", active: true, expiry: "2026-06-27", maxDevices: 500, usedDevices: [] }
 };
