@@ -10,10 +10,10 @@ const DB_FILE = './database.json';
 
 // Initial data load
 let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
-    "anurag1": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
-    "anurag3": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
-    "sachin": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
-    "fuck": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    "ANURAG": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    "SACHIN": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    
+    
     "AKTEAM": { type: "trial", active: true, expiry: "2026-06-27", maxDevices: 500, usedDevices: [] }
 };
 
