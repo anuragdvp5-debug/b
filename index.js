@@ -2,8 +2,8 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-// Tumhari asli key jo tum Injector mein daloge
-const MY_VALID_KEY = "key-anurag-1acc74bd6862522a3c08c21371265bffa676e6c9d8789d673a873e9d4e3e0ce3-Vm8Lk7Uj2JmsjCPVPVjrLa7zgfx3uz9E";
+// Key ab sirf "anurag" hai
+const MY_VALID_KEY = "anurag";
 
 app.get('/', (req, res) => {
     res.send('Injector Backend is Live!');
@@ -11,7 +11,7 @@ app.get('/', (req, res) => {
 
 app.post('/connect', (req, res) => {
     // Injector se aane wala data check karo
-    const clientKey = req.body.key; // Yahan 'key' wo field name hai jo tumhara Injector bhej raha hai
+    const clientKey = req.body.key; 
 
     // Validation Logic
     if (clientKey === MY_VALID_KEY) {
