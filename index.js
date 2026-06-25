@@ -5,9 +5,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const KEYS = {
-    "anurag1": { active: true, expiry: "2099-12-31", lockedDevice: null },
-    "anurag3": { active: true, expiry: "2026-06-26", lockedDevice: null }, // Example: Iski date nikal gayi hai
-    "sachin": { active: true, expiry: "2026-08-30", lockedDevice: null }
+    "anurag1": { type: "pro", active: true, expiry: "2099-12-31", lockedDevice: null },
+    "anurag3": { type: "pro", active: true, expiry: "2026-06-26", lockedDevice: null },
+    "sachin": { type: "pro", active: true, expiry: "2026-08-30", lockedDevice: null },
+    // TRIAL KEY: 500 device limit, 1 din ki expiry
+    "AKTEAM": { type: "trial", active: true, expiry: "2026-06-27", maxDevices: 500, usedDevices: [] }
 };
 
 app.post('/connect', (req, res) => {
@@ -22,23 +24,29 @@ app.post('/connect', (req, res) => {
     // 2. Active status check
     if (!keyData.active) return res.json({ "status": false, "message": "Key Inactive! Contact Admin." });
 
-    // 3. --- NEW: DATE EXPIRY LOGIC ---
-    const today = new Date(); // Current date (2026-06-25)
+    // 3. Expiry Check
+    const today = new Date();
     const expiryDate = new Date(keyData.expiry);
-    
-    // Agar aaj ki date expiry date se badi hai
     if (today > expiryDate) {
         return res.json({ "status": false, "message": "Key has expired! Contact Admin." });
     }
-    // ---------------------------------
 
-    // 4. Device Lock Logic
-    if (keyData.lockedDevice === null) {
-        keyData.lockedDevice = deviceId; 
-    }
-
-    if (keyData.lockedDevice !== deviceId) {
-        return res.json({ "status": false, "message": "Key is locked to another device!" });
+    // 4. Logic: Trial vs Pro
+    if (keyData.type === "trial") {
+        // Agar device pehli baar aaya hai aur limit bachi hai
+        if (!keyData.usedDevices.includes(deviceId) && keyData.usedDevices.length < keyData.maxDevices) {
+            keyData.usedDevices.push(deviceId);
+        }
+        // Agar device list mein nahi hai
+        if (!keyData.usedDevices.includes(deviceId)) {
+            return res.json({ "status": false, "message": "Trial limit reached or invalid device!" });
+        }
+    } else {
+        // Pro logic (Single device lock)
+        if (keyData.lockedDevice === null) keyData.lockedDevice = deviceId;
+        if (keyData.lockedDevice !== deviceId) {
+            return res.json({ "status": false, "message": "Key is locked to another device!" });
+        }
     }
 
     // 5. Success
