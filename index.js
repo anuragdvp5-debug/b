@@ -1,65 +1,60 @@
 const express = require('express');
+const fs = require('fs');
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const KEYS = {
+// File jahan keys save hongi
+const DB_FILE = './database.json';
+
+// Initial data load
+let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
     "anurag1": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
     "anurag3": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
     "sachin": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
     "fuck": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
-    // TRIAL KEY: 500 device limit, 1 din ki expiry
     "AKTEAM": { type: "trial", active: true, expiry: "2026-06-27", maxDevices: 500, usedDevices: [] }
 };
 
+// Data save karne ka function
+function saveDB() {
+    fs.writeFileSync(DB_FILE, JSON.stringify(KEYS, null, 2));
+}
+
 app.post('/connect', (req, res) => {
-    const userKey = req.body.user_key; 
-    const deviceId = req.body.serial; 
+    const userKey = req.body.user_key;
+    const deviceId = req.body.serial;
     
     const keyData = KEYS[userKey];
 
-    // 1. Key check
     if (!keyData) return res.json({ "status": false, "message": "Invalid Key!" });
+    if (!keyData.active) return res.json({ "status": false, "message": "Key Inactive!" });
 
-    // 2. Active status check
-    if (!keyData.active) return res.json({ "status": false, "message": "Key Inactive! Contact Admin." });
+    const today = new Date().toISOString().split('T')[0];
+    if (today > keyData.expiry) return res.json({ "status": false, "message": "Key has expired!" });
 
-    // 3. Expiry Check (Current date comparison)
-    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    if (today > keyData.expiry) {
-        return res.json({ "status": false, "message": "Key has expired! Contact Admin." });
-    }
-
-    // 4. Logic: Trial vs Pro
     if (keyData.type === "trial") {
-        // Agar device pehli baar aaya hai aur limit bachi hai
         if (!keyData.usedDevices.includes(deviceId) && keyData.usedDevices.length < keyData.maxDevices) {
             keyData.usedDevices.push(deviceId);
+            saveDB(); // Save after update
         }
-        // Agar device list mein nahi hai
-        if (!keyData.usedDevices.includes(deviceId)) {
-            return res.json({ "status": false, "message": "Trial limit reached or invalid device!" });
-        }
+        if (!keyData.usedDevices.includes(deviceId)) return res.json({ "status": false, "message": "Limit reached!" });
     } else {
-        // Pro logic (Single device lock)
-        if (keyData.lockedDevice === null) keyData.lockedDevice = deviceId;
+        // PRO: Single device lock
+        if (keyData.lockedDevice === null) {
+            keyData.lockedDevice = deviceId;
+            saveDB(); // Yahan lock ho gaya, aur permanently save ho gaya!
+        }
+        
         if (keyData.lockedDevice !== deviceId) {
             return res.json({ "status": false, "message": "Key is locked to another device!" });
         }
     }
 
-    // 5. Success
     res.json({
         "status": true,
-        "data": {
-            "real": userKey,
-            "token": "8117e9b001fb568b9279eccf5a64e08d",
-            "modname": "Anurag Related",
-            "mod_status": "Safe",
-            "expired_date": keyData.expiry,
-            "device": deviceId
-        }
+        "data": { "real": userKey, "token": "8117e9b001fb568b9279eccf5a64e08d", "modname": "Anurag Related", "mod_status": "Safe", "expired_date": keyData.expiry, "device": deviceId }
     });
 });
 
