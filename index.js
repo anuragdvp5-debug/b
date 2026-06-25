@@ -1,27 +1,18 @@
 const express = require('express');
 const app = express();
 
-// Middleware: JSON aur Form-data dono ke liye
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- CONTROL CENTER ---
-// Yahan tumhari keys hain. 
-// 'lockedDevice' ko 'null' rakhna, jab user login karega toh ye apne aap device ID se bhar jayega.
 const KEYS = {
     "anurag1": { active: true, expiry: "2099-12-31", lockedDevice: null },
-    "anurag3": { active: true, expiry: "2026-08-30", lockedDevice: null },
+    "anurag3": { active: true, expiry: "2026-06-20", lockedDevice: null }, // Example: Iski date nikal gayi hai
     "sachin": { active: true, expiry: "2026-08-30", lockedDevice: null }
 };
 
-app.get('/', (req, res) => {
-    res.send('Injector Backend is Live!');
-});
-
 app.post('/connect', (req, res) => {
-    // Screenshot ke mutabik field ka naam 'user_key' hai
     const userKey = req.body.user_key; 
-    const deviceId = req.body.serial;  // Device ID pakadne ke liye
+    const deviceId = req.body.serial; 
     
     const keyData = KEYS[userKey];
 
@@ -31,17 +22,26 @@ app.post('/connect', (req, res) => {
     // 2. Active status check
     if (!keyData.active) return res.json({ "status": false, "message": "Key Inactive! Contact Admin." });
 
-    // 3. Device Lock Logic
+    // 3. --- NEW: DATE EXPIRY LOGIC ---
+    const today = new Date(); // Current date (2026-06-25)
+    const expiryDate = new Date(keyData.expiry);
+    
+    // Agar aaj ki date expiry date se badi hai
+    if (today > expiryDate) {
+        return res.json({ "status": false, "message": "Key has expired! Contact Admin." });
+    }
+    // ---------------------------------
+
+    // 4. Device Lock Logic
     if (keyData.lockedDevice === null) {
-        keyData.lockedDevice = deviceId; // Pehli baar mein device lock kar diya
+        keyData.lockedDevice = deviceId; 
     }
 
-    // Check karo ki wahi device hai ya nahi
     if (keyData.lockedDevice !== deviceId) {
         return res.json({ "status": false, "message": "Key is locked to another device!" });
     }
 
-    // 4. Success Response
+    // 5. Success
     res.json({
         "status": true,
         "data": {
