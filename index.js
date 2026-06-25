@@ -2,7 +2,12 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-// Ye wohi path hai jo tumhari .so file me hai
+// Root route - Agar browser se check karoge toh ye message dikhega
+app.get('/', (req, res) => {
+    res.send('Injector Backend is Live!');
+});
+
+// Main endpoint - Tumhari .so file isse hit karegi
 app.post('/connect', (req, res) => {
     res.json({
         "status": true,
