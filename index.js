@@ -12,6 +12,8 @@ const DB_FILE = './database.json';
 let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
     "ANURAG": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
     "SACHIN": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    "kapil bhai": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
+    "vineet": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
     
     
     "ANURAG1": { type: "trial", active: true, expiry: "2026-06-28", maxDevices: 500, usedDevices: [] }
