@@ -16,7 +16,7 @@ let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
     "vineet": { type: "pro", active: true, expiry: "2026-06-28", lockedDevice: null },
     
     
-    "ANURAG1bh": { type: "trial", active: true, expiry: "2026-06-28", maxDevices: 500, usedDevices: [] }
+    "ANURAG-BALAJI": { type: "trial", active: true, expiry: "2026-06-28", maxDevices: 500, usedDevices: [] }
 };
 
 // Data save karne ka function
