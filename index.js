@@ -63,3 +63,38 @@ app.post('/connect', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+
+
+
+// --- CENTRALIZED INJECTOR CONTROL (BKL HOOKS) ---
+
+app.get('/bkl-verify', (req, res) => {
+    // Injector se aane wala identifier (e.g., ?id=toxic_injector)
+    const injectorId = req.query.id || "unknown";
+    
+    // Yahan tum log kar sakte ho ki kaunsa injector active hai
+    console.log(`[+] Verification request from: ${injectorId}`);
+
+    // Central Logic: Yahan se tum globally saare apps ko control karoge
+    const isMaintenance = false; // Agar true karoge, sab apps 'Maintenance' dikhayengi
+
+    if (isMaintenance) {
+        return res.json({ status: false, message: "Server under maintenance!" });
+    }
+
+    // Default: Success (Isse saare patch kiye gaye injectors login ho jayenge)
+    res.send("SUCCESS");
+});
+
+// --- Optional: Dynamic Message/Config for Injectors ---
+app.get('/bkl-config', (req, res) => {
+    res.json({
+        "status": "online",
+        "version": "1.0.0",
+        "announcement": "Welcome to BKL Hook System!"
+    });
+});
+
+
