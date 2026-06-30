@@ -71,24 +71,22 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- CENTRALIZED INJECTOR CONTROL (BKL HOOKS) ---
 
 app.get('/bkl-verify', (req, res) => {
-    // Injector se aane wala identifier (e.g., ?id=toxic_injector)
-    const injectorId = req.query.id || "unknown";
-    
-    // Yahan tum log kar sakte ho ki kaunsa injector active hai
-    console.log(`[+] Verification request from: ${injectorId}`);
+    // 1. App se aane wale parameters log karo (Taaki pata chale ki request sahi aa rahi hai)
+    const { id, key, hwid, model } = req.query;
+    console.log(`[+] Login Request -> ID: ${id} | Key: ${key} | HWID: ${hwid} | Model: ${model}`);
 
-    // Central Logic: Yahan se tum globally saare apps ko control karoge
-    const isMaintenance = false; // Agar true karoge, sab apps 'Maintenance' dikhayengi
-
+    // 2. Maintenance Check
+    const isMaintenance = false;
     if (isMaintenance) {
-        return res.json({ status: false, message: "Server under maintenance!" });
+        return res.send("MAINTENANCE"); // App ka 'onPostExecute' check karega ki "SUCCESS" hai ya nahi
     }
 
-    // Default: Success (Isse saare patch kiye gaye injectors login ho jayenge)
-    res.send("SUCCESS");
+    // 3. Response: App 'SUCCESS' string dhund rahi hai
+    // Hum simple text bhej rahe hain taaki parsing mein error na aaye
+    res.status(200).send("SUCCESS");
 });
 
-// --- Optional: Dynamic Message/Config for Injectors ---
+// --- Config Endpoint (Agar app kabhi config mangti hai) ---
 app.get('/bkl-config', (req, res) => {
     res.json({
         "status": "online",
