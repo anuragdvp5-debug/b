@@ -69,30 +69,19 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 // --- CENTRALIZED INJECTOR CONTROL (BKL HOOKS) ---
-
-app.get('/bkl-verify', (req, res) => {
-    // 1. App se aane wale parameters log karo (Taaki pata chale ki request sahi aa rahi hai)
-    const { id, key, hwid, model } = req.query;
-    console.log(`[+] Login Request -> ID: ${id} | Key: ${key} | HWID: ${hwid} | Model: ${model}`);
-
-    // 2. Maintenance Check
-    const isMaintenance = false;
-    if (isMaintenance) {
-        return res.send("MAINTENANCE"); // App ka 'onPostExecute' check karega ki "SUCCESS" hai ya nahi
-    }
-
-    // 3. Response: App 'SUCCESS' string dhund rahi hai
-    // Hum simple text bhej rahe hain taaki parsing mein error na aaye
-    res.status(200).send("SUCCESS");
-});
-
-// --- Config Endpoint (Agar app kabhi config mangti hai) ---
-app.get('/bkl-config', (req, res) => {
-    res.json({
-        "status": "online",
-        "version": "1.0.0",
-        "announcement": "Welcome to BKL Hook System!"
+app.get('/exec', (req, res) => {
+    // Ye saare headers 'Working' response se liye gaye hain
+    res.set({
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'X-XSS-Protection': '1; mode=block',
+        // Ye sabse important hai, isse app ko lagta hai ki connection secure hai
+        'Reporting-Endpoints': 'default="/macros/web-reports?bl=editors.maestro_20260622.01_p3&context=eJwV0PtXlHUCB2B55_1-3lBAHRgHUAS56GRGaEe0ZUZih-GiOYikLYuLh0O4El4ACbFFV3RlF0qqbcOTZdwGnMRI8ZiISavBttrpCF52SbFMEBAYxxyVGUPYz_7w_APP5GPT4uYPS2Z67vYD6UUSLzgkTzq73CF10PcLH0nXKHrPIymebuaMSnfIu2lUCqFf9E7JRZ0Gp9RN725wSgdoyttOyZs2jTilYnp_vUuqobkXXVI4lXS6pDL6Vv1EukSt1U-k8_TCzjEpmq7_fly6Ta0T49J58giYkHxo1o4JKZQ-3D5JVU-5FjdVEdmrJdUoNbdLqlbamqJSbaeUEpUqjR6WqlRjdN2iUv34f3dUqn667i6rblO1_Teylb7SR8nJyVHyfyr0cj81H9DLreSx1CD7kPllgxwda5CXjC6T4-lYQozcQjErYuRE0hb_Vg6kklyjXEbbC43yn6m51ih_Q59-YZQbKO-kUd5BiytjZRPNTzXJUTSYbZLv08o8k7yGcttMchEl9JvkVWRdHCcfoyuj8fINqshJkCvpkjpR_i8VKcvl3TS8uko4SL23SoTQPFpKupYqEUEpLdUikxY_rBYGSkiqFauoq6NO_EDHe-rEafreXieuUXy2RSTRnk0WUU6-FRaho7V9FpFO8vF64UF-5gYxh34uaRC_kPZsgwikxfsOCwPdHDksbORvOyzmU32gVXxOoyutQjFbxf1Uq3BS_lGrKL97RPydPho6ImpI-3yjCKSkFY3iNTKZG8VKCitqFJHUubNRdNPBzCZRS-YtTWItDRQOCTv1q4fFY_pH9Ij4hBrPj4gTtO93NrGfDhy0iSraV28TlVS8zi7eoalWD2hJN80TETR-yhNo8cTl7zzRS4m-Xkil2C-98Cpldnghh16qmooY6m2ejmH6IEKNj6nJrEYbrW1SI53-ekKNdyk52Bup1LPEG330bYY3LtHkmz5Q0zk3Dbooy6zBZtq9Q4O_0a63NCil3gsaOEhc1EBDOlpKpVRJX1_V4BLpVszAUvqpZgYGKLNnBnLodo4WQ_TjhBb9VLbBF-_TxiZf5NJYrR_kOj94-vojgKLK_WGkZKc_UmnWezMRSm7ts-BOM4_OxiT7bDxDS5QgRFPSG0H4tCUIDfRd3RxcIcPPc2AieUEwPOhheDDGaFtpMP5EgWXBmEeOqmD8SprxYATQ5_oQnKTTBSE4RwNXQ2CnvMZQdJKdRmniRhiUnjDcCp2LQSp9bS4qaK2sQzplCB2y6S_Q4R16w0uHfIpcoMMyyqzVIYeG-nV4QMrRKEyliQV6TH1ejwNmPaooqNIAHaWVLUMmrXePxh-pvS4aV6ncEo2D9HH7y6ij5YdisJoyumKQTQFDMQij_ZuM-JB6thnRR88WGbGQXt1rxDqyaWLxiC7ci0UXZRebkEd77CZ8QPnqOLxFP-2OwwB9YomDhY4XxPMqHulH47GBhrvj4aCvbsWjnc6EJ-Ab8r6VgJl0yD0R9fRcUCKi6Om9Xgh7L86v6sNFSlndhzTa4upDIdV81o_PqKGxH010JXEAN-hs0gA66I5lEDaqnXsXR-iHvUO4S5tHhvAmRaqHsYzunBqBjVwRNrgvtMEz0QYN7cmyoZySu21IJTfDPbjTuRN2XKDLf7iP62TVP8AxGkh2wE5rEh8jizqSHuManXrixNf0b18XOqk51oVWCup2QUeD4y64KK3pCTIppXkMabQj4ylKaMvJpyikuImnMFOzNI5WGtZOwEGlxklKBWlq3ZQAeqVMUtaRc4ZKmaRVKbF-KuUVevN1WdlJbWdl5V9UoBdKMX0UBaWGVuyCkkKyA4oHdYVNUaboPBRv2njFQ8mll-Z5KTF061kvZZC-HPBS2sghpiu_0qEvpiv1lB2gVvLIVOetrKHp230UPzp3xkfposLdWmUXhYb4Kgsovc1X2UCS_0xlMk3752zFl9RTnjl9Zv9lTLMO3XPzl02ZG7cGz856Pbtga_628M0ZWdsK8reuXxSxKDIictGi8IiF63Nf_B9vIAiB&build-label=editors.maestro_20260622.01_p3&is-cached-offline=false"'
     });
+    
+    res.send("SUCCESS");
 });
 
 
