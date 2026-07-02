@@ -68,13 +68,17 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
+app.post('/c/b2k', (req, res) => {
+    // Sab kuch is bracket ke andar hona chahiye
+    const secret = "X7B4N2P8Q9W3Z6M5";
+    const base64Token = Buffer.from(secret).toString('base64');
 
-
-
-
-
-res.json({
-    "status": true,
-    "token": "X7B4N2P8Q9W3Z6M5",
-    "PUBG": "true" 
+    res.json({
+        "status": true,
+        "token": base64Token,
+        "data": {
+            "token": base64Token,
+            "status": "Success"
+        }
+    });
 });
