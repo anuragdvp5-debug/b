@@ -70,29 +70,23 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 
-// Dummy database of authorized keys
-const authorizedKeys = ["djsjjsjdxhvx", "my_secret_key_123"]; 
-
 app.post('/c/b2k', (req, res) => {
-    const receivedKey = req.body.user_key;
-    const secretKey = "X7B4N2P8Q9W3Z6M5";
+    // Sabse pehle app ke logs mein dekho ki kya req.body.user_key mil raha hai
+    console.log("Received Key:", req.body.user_key);
 
-    // Check karo kya key database mein hai?
-    if (authorizedKeys.includes(receivedKey)) {
-        // Key match ho gayi, ab Success bhejo
-        res.json({
-            "status": true,
-            "message": "Login Success",
-            "token": secretKey, // Yahi token verification ke liye chahiye
-            "data": { "status": "Success" }
-        });
-    } else {
-        // Key match nahi hui
-        res.json({
-            "status": false,
-            "message": "Invalid Key! Contact Admin"
-        });
-    }
+    // Hardcoded response structure jo app ko chahiye
+    const responseData = {
+        "status": true,
+        "message": "Login Success",
+        "token": "X7B4N2P8Q9W3Z6M5", // 209.PNG mein mili key use kar rahe hain
+        "data": {
+            "token": "X7B4N2P8Q9W3Z6M5",
+            "status": "Success"
+        }
+    };
+
+    res.header("Content-Type", "application/json");
+    res.status(200).json(responseData);
 });
 
 
