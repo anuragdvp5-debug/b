@@ -69,15 +69,13 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 app.post('/c/b2k', (req, res) => {
-    // Log check karne ke liye theek hai, lekin logic remove karo
-    console.log("Request received from:", req.body.user_key);
-
-    // Hardcoded success response bhej do, request body ko ignore karke
+    // App ke bheje hue data ko echo back karo agar zaruri ho
     res.status(200).json({
         "status": true,
         "data": {
             "token": "cf38faf2dbe3587f85f11df824cc65a8",
-            "rng": 178300561
+            "rng": 178300561,
+            "user_key": req.body.user_key // Kuch apps apna bheja hua key wapas expect karti hain
         }
     });
 });
