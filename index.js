@@ -70,18 +70,16 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 
-
-
-
 app.post('/c/b2k', (req, res) => {
-    const response = {
-        "status": "Success",
-        "data": "Login Success"
-    };
-    res.status(200).json(response);
+    // Ye format sabse zyada use hota hai
+    res.json({
+        "status": true,
+        "message": "Login Success",
+        "data": {
+            "key": "authorized"
+        }
+    });
 });
-
-
 
 
 
