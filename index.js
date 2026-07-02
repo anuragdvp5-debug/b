@@ -69,32 +69,22 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-app.post('/c/b2k', (req, res) => {
-    // 1. App se aane wale parameters capture karo
-    const { game, serial, user_key } = req.body;
-    
-    console.log(`b2k Request received for Game: ${game}, Serial: ${serial}, UserKey: ${user_key}`);
 
-    // 2. Yahan validation logic add kar sakte ho (agar chahiye toh)
-    // Abhi ke liye hum ise "Success" hi bhejenge
-    
-    // 3. Wahi format bhejo jo app ka "Success" response hai
+app.post('/c/b2k', (req, res) => {
+    // APK jo bhi UserKey bhejegi, hum use force-approve karenge
+    console.log("b2k Request received:", req.body);
+
     res.json({
-        "status": "Success",
+        "status": "Success",        // Kuch apps "Success" chahti hain
         "message": "Login Authorized",
         "data": {
-            "game": game,
-            "serial": serial,
-            "user_key": user_key,
-            "status": true,
-            "mod_status": "Safe"
+            "status": true,         // Kuch apps "status: true" chahti hain
+            "real": req.body.user_key,
+            "mod_status": "Safe",
+            "expired_date": "2026-12-31" // Future date daal do
         }
     });
 });
-
-// --- DUSRE INJECTOR KA CODE YAHAN KHATAM ---
-
-
 
 
 
