@@ -69,17 +69,16 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-
 app.post('/c/b2k', (req, res) => {
-    // Ye format sabse zyada use hota hai
     res.json({
         "status": true,
         "message": "Login Success",
+        "token": "a1b2c3d4e5f6", // Yahan token add kar diya
         "data": {
-            "key": "authorized"
+            "key": "authorized",
+            "token": "a1b2c3d4e5f6" // Kuch apps yahan bhi token maangti hain
         }
     });
 });
-
 
 
