@@ -68,17 +68,25 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
-app.post('/c/b2k', (req, res) => {
-    // Sab kuch is bracket ke andar hona chahiye
-    const secret = "X7B4N2P8Q9W3Z6M5";
-    const base64Token = Buffer.from(secret).toString('base64');
 
-    res.json({
+
+const crypto = require('crypto');
+
+app.post('/c/b2k', (req, res) => {
+    const secretKey = "X7B4N2P8Q9W3Z6M5"; // 209.PNG mein mili key
+    
+    // JSON response jo app ko milna chahiye
+    const rawData = JSON.stringify({
         "status": true,
-        "token": base64Token,
-        "data": {
-            "token": base64Token,
-            "status": "Success"
-        }
+        "token": "valid"
     });
+
+    // AES-128-ECB encryption
+    const cipher = crypto.createCipheriv('aes-128-ecb', secretKey.padEnd(16, ' '), null);
+    let encrypted = cipher.update(rawData, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    // Encrypted data bhejo
+    res.send(encrypted);
 });
+
