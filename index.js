@@ -70,20 +70,16 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 
-
-
 app.post('/c/b2k', (req, res) => {
-    // Request se aaya hua data use karke token banayenge
-    const myToken = "auth_" + req.body.user_key; 
-
+    // App jo data bhej rahi hai uske hisaab se response
     res.json({
         "status": true,
         "message": "Login Success",
-        "token": myToken, 
+        "token": "valid",         // "token" field required by app
+        "X-API-Key": "success",   // "X-API-Key" string bhi present hai
         "data": {
-            "token": myToken,
             "status": "Success",
-            "mod_status": "Active"
+            "token": "valid"
         }
     });
 });
