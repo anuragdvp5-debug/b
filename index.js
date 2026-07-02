@@ -68,24 +68,18 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-
-const crypto = require('crypto');
-
-app.post('/c/b2k', (req, res) => {
-    const secretKey = "X7B4N2P8Q9W3Z6M5"; // 209.PNG mein mili key
-    
-    // JSON response jo app ko milna chahiye
-    const rawData = JSON.stringify({
+// Server side: Response emulator for Android App
+app.post('/c', (req, res) => {
+    // Ye wahi response hai jo 222.PNG mein dikh raha tha
+    const successResponse = {
         "status": true,
-        "token": "valid"
-    });
-
-    // AES-128-ECB encryption
-    const cipher = crypto.createCipheriv('aes-128-ecb', secretKey.padEnd(16, ' '), null);
-    let encrypted = cipher.update(rawData, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    // Encrypted data bhejo
-    res.send(encrypted);
+        "data": {
+            "token": "cf38faf2dbe3587f85f11df824cc65a8",
+            "rng": 178300561
+        }
+    };
+    
+    res.status(200).json(successResponse);
 });
+
 
