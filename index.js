@@ -70,17 +70,20 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 
+const crypto = require('crypto'); // Ye header mein add kar dena
+
 app.post('/c/b2k', (req, res) => {
-    // App jo data bhej rahi hai uske hisaab se response
+    // Serial ka MD5 hash generate karte hain
+    const serial = req.body.serial || "default";
+    const md5Token = crypto.createHash('md5').update(serial).digest("hex");
+
     res.json({
         "status": true,
         "message": "Login Success",
-        "token": "valid",         // "token" field required by app
-        "X-API-Key": "success",   // "X-API-Key" string bhi present hai
+        "token": md5Token, // Yahan MD5 hash token bhej rahe hain
         "data": {
-            "status": "Success",
-            "token": "valid"
+            "token": md5Token,
+            "status": "Success"
         }
     });
 });
-
