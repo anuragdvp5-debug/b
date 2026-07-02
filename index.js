@@ -69,10 +69,10 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 app.post('/c/b2k', (req, res) => {
-    // Log the incoming request to your Render logs
-    console.log("App sent this request body:", req.body);
-    console.log("App sent these headers:", req.headers);
+    // Log check karne ke liye theek hai, lekin logic remove karo
+    console.log("Request received from:", req.body.user_key);
 
+    // Hardcoded success response bhej do, request body ko ignore karke
     res.status(200).json({
         "status": true,
         "data": {
