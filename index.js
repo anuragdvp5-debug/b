@@ -78,7 +78,6 @@ app.post('/c/b2k', (req, res) => {
         }
     });
 });
-    res.status(200).json(successResponse);
-});
+    
 
 
