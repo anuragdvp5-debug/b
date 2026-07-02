@@ -70,23 +70,18 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 
-app.post('/c/b2k', (req, res) => {
-    // APK jo bhi UserKey bhejegi, hum use force-approve karenge
-    console.log("b2k Request received:", req.body);
 
+app.post('/c/b2k', (req, res) => {
+    // App ke liye "Success" response format
     res.json({
-        "status": "Success",        // Kuch apps "Success" chahti hain
-        "message": "Login Authorized",
+        "status": "Success",        // 206.PNG mein "Success" string hai
+        "message": "Login Success", // 206.PNG mein "Login Success" string hai
         "data": {
-            "status": true,         // Kuch apps "status: true" chahti hain
-            "real": req.body.user_key,
-            "mod_status": "Safe",
-            "expired_date": "2026-12-31" // Future date daal do
+            "status": true,
+            "mod_status": "Safe"
         }
     });
 });
-
-
 
 
 
