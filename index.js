@@ -69,18 +69,13 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-
 app.post('/c/b2k', (req, res) => {
-    // "token" field mein wahi secret string daalo jo 209.PNG mein mili
-    const secretKey = "X7B4N2P8Q9W3Z6M5"; 
+    console.log("--- NAYI REQUEST AAYI HAI ---");
+    console.log("Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("Body:", JSON.stringify(req.body, null, 2));
+    console.log("Query Params:", JSON.stringify(req.query, null, 2));
+    console.log("-----------------------------");
 
-    res.json({
-        "status": true,
-        "message": "Login Success",
-        "token": secretKey, 
-        "data": {
-            "token": secretKey,
-            "status": "Success"
-        }
-    });
+    // Filhal ke liye sirf ek basic response
+    res.json({ "status": "Checking" });
 });
