@@ -69,25 +69,17 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-
 app.post('/c/b2k', (req, res) => {
-    // Sabse pehle app ke logs mein dekho ki kya req.body.user_key mil raha hai
-    console.log("Received Key:", req.body.user_key);
+    // String ko base64 mein encode karte hain
+    const secret = "X7B4N2P8Q9W3Z6M5";
+    const base64Token = Buffer.from(secret).toString('base64');
 
-    // Hardcoded response structure jo app ko chahiye
-    const responseData = {
+    res.json({
         "status": true,
-        "message": "Login Success",
-        "token": "X7B4N2P8Q9W3Z6M5", // 209.PNG mein mili key use kar rahe hain
+        "token": base64Token, // Yahan encoded token
         "data": {
-            "token": "X7B4N2P8Q9W3Z6M5",
+            "token": base64Token,
             "status": "Success"
         }
-    };
-
-    res.header("Content-Type", "application/json");
-    res.status(200).json(responseData);
+    });
 });
-
-
-
