@@ -68,14 +68,14 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
-
 app.post('/c/b2k', (req, res) => {
-    // App JSON object dhoond rahi hai, isliye hum JSON structure bhejenge
+    // App jo data bhej rahi hai, wo log karo
+    console.log("Full Request Data:", req.body);
+
+    // Kuch apps "Success" ke saath user ka data wapas maangti hain
     res.json({
         "status": "Success",
-        "reason": "Success",
-        "data": "Success"
+        "message": "Login Success",
+        "user_data": req.body // Yahan hum wahi data wapas bhej rahe hain jo app ne bheja
     });
 });
-
-
