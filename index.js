@@ -69,9 +69,12 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-res.set('Content-Type', 'application/json');
-res.send(JSON.stringify({ "status": "Success" }));
-
+app.post('/c/b2k', (req, res) => {
+    // App ek JSON Object expect kar rahi hai, isliye hum JSON hi bhejenge
+    res.json({
+        "status": "Success" 
+    });
+});
 
 
 
