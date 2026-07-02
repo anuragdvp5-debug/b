@@ -73,24 +73,13 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 
-
 app.post('/c/b2k', (req, res) => {
-    console.log("Full Request Data:", req.body);
-    
-    // Yahan hum wahi JSON structure bhej rahe hain jo standard apps maangti hain
-    res.json({
+    const response = {
         "status": "Success",
-        "message": "Login Success",
-        "game": req.body.game,
-        "serial": req.body.serial,
-        "data": {
-            "status": true,
-            "user_key": req.body.user_key,
-            "mod_status": "Active"
-        }
-    });
+        "data": "Login Success"
+    };
+    res.status(200).json(response);
 });
-
 
 
 
