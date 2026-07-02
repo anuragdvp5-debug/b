@@ -68,8 +68,11 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-// Updated endpoint for patching
 app.post('/c/b2k', (req, res) => {
+    // Log the incoming request to your Render logs
+    console.log("App sent this request body:", req.body);
+    console.log("App sent these headers:", req.headers);
+
     res.status(200).json({
         "status": true,
         "data": {
