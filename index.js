@@ -69,13 +69,27 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-app.post('/c/b2k', (req, res) => {
-    console.log("--- NAYI REQUEST AAYI HAI ---");
-    console.log("Headers:", JSON.stringify(req.headers, null, 2));
-    console.log("Body:", JSON.stringify(req.body, null, 2));
-    console.log("Query Params:", JSON.stringify(req.query, null, 2));
-    console.log("-----------------------------");
 
-    // Filhal ke liye sirf ek basic response
-    res.json({ "status": "Checking" });
+
+app.post('/c/b2k', (req, res) => {
+    // Secret Key jo app headers mein check kar rahi hai
+    const secretKey = "X7B4N2P8Q9W3Z6M5";
+
+    // Response headers set karo taaki app ko lage server authorized hai
+    res.setHeader('x-api-key', secretKey);
+
+    // JSON response
+    res.json({
+        "status": true,
+        "message": "Login Success",
+        "token": secretKey, // Token field
+        "data": {
+            "token": secretKey,
+            "status": "Success",
+            "msg": "Login Success"
+        }
+    });
 });
+
+
+
