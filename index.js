@@ -68,17 +68,16 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-// Server side: Response emulator for Android App
-app.post('/c', (req, res) => {
-    // Ye wahi response hai jo 222.PNG mein dikh raha tha
-    const successResponse = {
+// Updated endpoint for patching
+app.post('/c/b2k', (req, res) => {
+    res.status(200).json({
         "status": true,
         "data": {
             "token": "cf38faf2dbe3587f85f11df824cc65a8",
             "rng": 178300561
         }
-    };
-    
+    });
+});
     res.status(200).json(successResponse);
 });
 
