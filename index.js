@@ -70,11 +70,12 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
 app.post('/c/b2k', (req, res) => {
-    // App ek JSON Object expect kar rahi hai, isliye hum JSON hi bhejenge
+    // App JSON object dhoond rahi hai, isliye hum JSON structure bhejenge
     res.json({
-        "status": "Success" 
+        "status": "Success",
+        "reason": "Success",
+        "data": "Success"
     });
 });
-
 
 
