@@ -69,7 +69,7 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
 
-app.post('/connect/b2k', (req, res) => {
+app.post('/c/b2k', (req, res) => {
     // 1. App se aane wale parameters capture karo
     const { game, serial, user_key } = req.body;
     
