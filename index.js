@@ -67,19 +67,22 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 // --- DUSRE INJECTOR (b2k) KE LIYE CONTROL CODE ---
+
+
+
+
 app.post('/c/b2k', (req, res) => {
-    // Ye headers exact match karo
+    // Headers jo 221.PNG mein the, wo yahan bhejne zaroori hain
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Etag', 'W/"54-Kc+TiHtTsAkVMcWPe01lrhKfW2k"'); // Yeh header 222_2.PNG se hai
+    res.setHeader('X-API-Key', 'X7B4N2P8Q9W3Z6M5'); // Yeh header verify ho raha hai
     
     res.status(200).json({
         "status": true,
         "data": {
             "token": "cf38faf2dbe3587f85f11df824cc65a8",
-            "rng": 178300561
+            "rng": 178300561,
+            "msg": "Success" // Kuch apps 'msg' field check karti hain
         }
     });
 });
-
 
