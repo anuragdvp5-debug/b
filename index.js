@@ -18,6 +18,10 @@ let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
 
     "SANDEEP": { type: "pro", active: true, expiry: "2026-07-11", lockedDevice: null },
     
+
+
+  "ANURAG-BIHARI BHAI": { type: "pro", active: true, expiry: "2026-07-12", lockedDevice: null },
+
     
     "TRIAL": { type: "trial", active: true, expiry: "2026-06-28", maxDevices: 500, usedDevices: [] }
 };
