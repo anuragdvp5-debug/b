@@ -19,7 +19,7 @@ let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
     
     
     
-    "TRIAL": { type: "trial", active: true, expiry: "2026-06-28", maxDevices: 500, usedDevices: [] }
+    "TRIAHGL": { type: "trial", active: true, expiry: "2026-06-28", maxDevices: 500, usedDevices: [] }
 };
 
 // Data save karne ka function
