@@ -16,7 +16,7 @@ let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
 
     "ANURAG16": { type: "pro", active: true, expiry: "2026-07-29", lockedDevice: null },
 
-    
+    "leonardi": { type: "pro", active: true, expiry: "2026-07-12", lockedDevice: null },
     
     
     "TRIAHGL": { type: "trial", active: true, expiry: "2026-06-28", maxDevices: 500, usedDevices: [] }
