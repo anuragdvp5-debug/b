@@ -80,22 +80,25 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // START: CONFIGURATION FOR NEW APK (v2)
 
 
+const crypto = require('crypto');
+
 app.post('/connect-v2', (req, res) => {
-    console.log("Request Body:", req.body);
+    const { user_key, serial } = req.body;
+    const secret = "Vm8Lk7Uj2JmsjCPVPVjrLa7zgfX3uz9E"; // Jo screenshot mein hai
     
-    // Response mein wo sab fields dalo jo login successful karne ke liye zaroori hain
+    // 1. MD5 Hash Generate karo
+    const inputString = `${user_key}|${serial}|${secret}`;
+    const token = crypto.createHash('md5').update(inputString).digest('hex');
+    
+    // 2. Current Timestamp (seconds mein)
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    // 3. Response bhejo
     res.status(200).json({
-        "status": 1,
-        "success": true,           // Kuch apps "success" key check karti hain
-        "message": "Login Success",
-        "user_data": {             // Kuch apps "data" ya "user_data" object mangti hain
-            "game": req.body.game,
-            "serial": req.body.serial,
-            "token": "dGhlX21hc3Rlcl9rZXlfMTIzNDU2" // Ek fake base64 token
-        },
-        "config": {                // Aksar features unlock karne ke liye ye chahiye
-            "enabled": true,
-            "version": "1.0.0"
+        "status": true,
+        "data": {
+            "token": token,
+            "timestamp": timestamp 
         }
     });
 });
