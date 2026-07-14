@@ -79,13 +79,7 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // ==========================================
 // START: CONFIGURATION FOR NEW APK (v2)
 
-// Yahan const mat likhna, seedha app.post likho
-const express = require('express');
-const app = express();
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
+// --- CUSTOM BYPASS ROUTE START ---
 app.post('/connect-v2', (req, res) => {
     res.json({
         "status": true,
@@ -104,5 +98,4 @@ app.post('/connect-v2', (req, res) => {
         }
     });
 });
-
-app.listen(10000);
+// --- CUSTOM BYPASS ROUTE END ---
