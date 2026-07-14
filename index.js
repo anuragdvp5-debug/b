@@ -67,3 +67,41 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
+
+
+
+
+
+
+
+
+
+// ==========================================
+// START: CONFIGURATION FOR NEW APK (v2)
+// ==========================================
+
+// Naya route: /connect-v2
+app.post('/connect-v2', (req, res) => {
+    console.log("New APK (v2) Connection Attempt:", req.body);
+    
+    // Yahan hum hardcoded 'true' bhej rahe hain taaki binary ka status check pass ho jaye
+    res.status(200).json({
+        "status": true,
+        "message": "Authorized-v2",
+        "reason": "SUCCESS"
+    });
+});
+
+// ==========================================
+// END: CONFIGURATION FOR NEW APK (v2)
+// ==========================================
+
+
+
+
+
+
+
+
+
+
