@@ -81,28 +81,32 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 const crypto = require('crypto');
+const express = require('express');
+const app = express();
+app.use(express.json());
 
 app.post('/connect-v2', (req, res) => {
     const { user_key, serial } = req.body;
-    const secret = "Vm8Lk7Uj2JmsjCPVPVjrLa7zgfX3uz9E"; // Jo screenshot mein hai
+    const secret = "Vm8Lk7Uj2JmsjCPVPVjrLa7zgfX3uz9E"; // Hardcoded secret
     
-    // 1. MD5 Hash Generate karo
+    // Step 1: Same formula jo app use kar rahi hai
     const inputString = `${user_key}|${serial}|${secret}`;
-    const token = crypto.createHash('md5').update(inputString).digest('hex');
+    const generatedToken = crypto.createHash('md5').update(inputString).digest('hex');
     
-    // 2. Current Timestamp (seconds mein)
-    const timestamp = Math.floor(Date.now() / 1000);
+    // Step 2: Current time (seconds)
+    const currentTime = Math.floor(Date.now() / 1000);
 
-    // 3. Response bhejo
-    res.status(200).json({
+    // Step 3: Exact JSON structure match karo
+    const response = {
         "status": true,
         "data": {
-            "token": token,
-            "timestamp": timestamp 
+            "token": generatedToken,
+            "time": currentTime
         }
-    });
-});
+    };
 
+    res.status(200).json(response);
+});
 
 
 
