@@ -79,8 +79,17 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // ==========================================
 // START: CONFIGURATION FOR NEW APK (v2)
 
-// --- CUSTOM BYPASS ROUTE START ---
+
+
+
+// --- CUSTOM BYPASS ROUTE (HEADER SPOOFING) ---
 app.post('/connect-v2', (req, res) => {
+    // Headers ko mask karo taaki original server jaisa lage
+    res.setHeader('Server', 'Apache/2.4.41 (Ubuntu)');
+    res.setHeader('X-Powered-By', 'PHP/7.4.33');
+    res.removeHeader('X-Powered-By'); // Express ka header hatao
+    res.removeHeader('x-render-origin-server'); // Render ka header hatao
+
     res.json({
         "status": true,
         "data": {
@@ -98,4 +107,3 @@ app.post('/connect-v2', (req, res) => {
         }
     });
 });
-// --- CUSTOM BYPASS ROUTE END ---
