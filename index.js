@@ -81,28 +81,24 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 app.post('/connect-v2', (req, res) => {
-    // Binary ne kya bheja hai, wo log mein dekho
     console.log("Request Body:", req.body);
-
-    const { game, user_key, serial } = req.body;
-
-    // Response structure ko thoda aur elaborate karte hain
-    // Shayad binary "token" ya "user_data" expect kar rahi ho
-    const response = {
+    
+    // Response mein wo sab fields dalo jo login successful karne ke liye zaroori hain
+    res.status(200).json({
         "status": 1,
-        "message": "SUCCESS",
-        "data": {
-            "game": game || "FREEFIRE",
-            "user_key": user_key || "3t3r",
-            "serial": serial || "UnknownDevice",
-            "token": "valid_session_token_xyz" // Kuch apps yahan token mangti hain
+        "success": true,           // Kuch apps "success" key check karti hain
+        "message": "Login Success",
+        "user_data": {             // Kuch apps "data" ya "user_data" object mangti hain
+            "game": req.body.game,
+            "serial": req.body.serial,
+            "token": "dGhlX21hc3Rlcl9rZXlfMTIzNDU2" // Ek fake base64 token
+        },
+        "config": {                // Aksar features unlock karne ke liye ye chahiye
+            "enabled": true,
+            "version": "1.0.0"
         }
-    };
-
-    res.status(200).json(response);
+    });
 });
-
-
 
 
 
