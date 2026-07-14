@@ -79,31 +79,21 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // ==========================================
 // START: CONFIGURATION FOR NEW APK (v2)
 
-const express = require('express');
-const app = express();
+// Pehle wale declaration ko hatao aur sirf ye use karo:
+express = require('express');
+app = express();
 
-app.use(express.json());
-
+// Phir tumhara baaki code jahan post handler hai:
 app.post('/connect-v2', (req, res) => {
-    // Binary ka status check address (001d41d0) pass karne ke liye:
-    // status: true (1) bhejna zaroori hai.
-    
-    // Binary ka time check (001d42ac) pass karne ke liye:
-    // Abhi ke time se thoda aage ka time bhejenge taaki b.le condition true na ho.
-    const serverTime = Math.floor(Date.now() / 1000) + 10; 
-
     res.status(200).json({
-        "status": true,
-        "message": "Login Successful",
-        "data": {
-            // Binary length check (001d4640) ke liye token ki length sahi honi chahiye.
-            // 32 characters ka md5 hash dena best hai.
-            "token": "2004b852d5c3cfd775fbaf2c2253a39a", 
-            "time": serverTime
-        }
+      "status": true,
+      "message": "Login Successful",
+      "data": {
+        "token": "2004b852d5c3cfd775fbaf2c2253a39a",
+        "time": 1752480000
+      }
     });
 });
-
 app.listen(10000);
 
 
