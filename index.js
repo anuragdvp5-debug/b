@@ -79,11 +79,7 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // ==========================================
 // START: CONFIGURATION FOR NEW APK (v2)
 
-// Pehle wale declaration ko hatao aur sirf ye use karo:
-express = require('express');
-app = express();
-
-// Phir tumhara baaki code jahan post handler hai:
+// Yahan const mat likhna, seedha app.post likho
 app.post('/connect-v2', (req, res) => {
     res.status(200).json({
       "status": true,
@@ -94,6 +90,5 @@ app.post('/connect-v2', (req, res) => {
       }
     });
 });
-app.listen(10000);
 
 
