@@ -80,8 +80,7 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // START: CONFIGURATION FOR NEW APK (v2)
 
 
-const express = require('express');
-const app = express();
+app.use(express.json());
 
 app.post('/connect-v2', (req, res) => {
     res.status(200).json({
