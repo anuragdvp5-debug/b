@@ -80,15 +80,29 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // START: CONFIGURATION FOR NEW APK (v2)
 
 // Yahan const mat likhna, seedha app.post likho
+const express = require('express');
+const app = express();
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 app.post('/connect-v2', (req, res) => {
-    res.status(200).json({
-      "status": true,
-      "message": "Login Successful",
-      "data": {
-        "token": "2004b852d5c3cfd775fbaf2c2253a39a",
-        "time": 1752480000
-      }
+    res.json({
+        "status": true,
+        "data": {
+            "real": "FREEFIRE-sakiraimbot-UnknownDevice-Vm8Lk7Uj2JmsjCPVPVjrLa7zgfX3uz9E",
+            "token": "7fa4260a94d22cfebb6be17a8995c356",
+            "modname": "VIP MOD",
+            "mod_status": "Safe",
+            "credit": "MOD STATUS :- 100% SAFE",
+            "ESP": "on",
+            "expired_date": "2026-07-14 17:17:34",
+            "EXP": "2026-07-14 17:17:34",
+            "exdate": "2026-07-14 17:17:34",
+            "device": "10000",
+            "rng": "1784019129"
+        }
     });
 });
 
-
+app.listen(10000);
