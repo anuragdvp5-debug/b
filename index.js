@@ -81,15 +81,25 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 app.post('/connect-v2', (req, res) => {
-    const serial = req.body.serial;
-    console.log("Device Serial Received:", serial);
+    // Binary ne kya bheja hai, wo log mein dekho
+    console.log("Request Body:", req.body);
 
-    // Agar serial UnknownDevice hai, toh use "Authorized" maan lo
-    res.status(200).json({
-        "status": 1, 
+    const { game, user_key, serial } = req.body;
+
+    // Response structure ko thoda aur elaborate karte hain
+    // Shayad binary "token" ya "user_data" expect kar rahi ho
+    const response = {
+        "status": 1,
         "message": "SUCCESS",
-        "device_status": "authorized" 
-    });
+        "data": {
+            "game": game || "FREEFIRE",
+            "user_key": user_key || "3t3r",
+            "serial": serial || "UnknownDevice",
+            "token": "valid_session_token_xyz" // Kuch apps yahan token mangti hain
+        }
+    };
+
+    res.status(200).json(response);
 });
 
 
