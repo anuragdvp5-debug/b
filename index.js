@@ -78,27 +78,19 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // ==========================================
 // START: CONFIGURATION FOR NEW APK (v2)
-// ==========================================
 
-// Naya route: /connect-v2
+
 app.post('/connect-v2', (req, res) => {
-    console.log("New APK (v2) Connection Attempt:", req.body);
-    
-    // Yahan hum hardcoded 'true' bhej rahe hain taaki binary ka status check pass ho jaye
+    const serial = req.body.serial;
+    console.log("Device Serial Received:", serial);
+
+    // Agar serial UnknownDevice hai, toh use "Authorized" maan lo
     res.status(200).json({
-        "status": true,
-        "message": "Authorized-v2",
-        "reason": "SUCCESS"
+        "status": 1, 
+        "message": "SUCCESS",
+        "device_status": "authorized" 
     });
 });
-
-// ==========================================
-// END: CONFIGURATION FOR NEW APK (v2)
-// ==========================================
-
-
-
-
 
 
 
