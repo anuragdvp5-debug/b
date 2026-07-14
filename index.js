@@ -80,33 +80,20 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 // START: CONFIGURATION FOR NEW APK (v2)
 
 
-const crypto = require('crypto');
 const express = require('express');
 const app = express();
-app.use(express.json());
 
 app.post('/connect-v2', (req, res) => {
-    const { user_key, serial } = req.body;
-    const secret = "Vm8Lk7Uj2JmsjCPVPVjrLa7zgfX3uz9E"; // Hardcoded secret
-    
-    // Step 1: Same formula jo app use kar rahi hai
-    const inputString = `${user_key}|${serial}|${secret}`;
-    const generatedToken = crypto.createHash('md5').update(inputString).digest('hex');
-    
-    // Step 2: Current time (seconds)
-    const currentTime = Math.floor(Date.now() / 1000);
-
-    // Step 3: Exact JSON structure match karo
-    const response = {
-        "status": true,
-        "data": {
-            "token": generatedToken,
-            "time": currentTime
-        }
-    };
-
-    res.status(200).json(response);
+    res.status(200).json({
+      "status": true,
+      "message": "Login Successful",
+      "data": {
+        "token": "2004b852d5c3cfd775fbaf2c2253a39a",
+        "time": 1752480000
+      }
+    });
 });
 
+app.listen(10000);
 
 
