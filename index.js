@@ -27,7 +27,7 @@ function saveDB() {
     fs.writeFileSync(DB_FILE, JSON.stringify(KEYS, null, 2));
 }
 
-app.post('/connect', (req, res) => {
+app.get('/connec', (req, res) => {
     const userKey = req.body.user_key;
     const deviceId = req.body.serial;
     
@@ -75,35 +75,3 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 
-
-// ==========================================
-// START: CONFIGURATION FOR NEW APK (v2)
-
-
-
-
-// --- CUSTOM BYPASS ROUTE (HEADER SPOOFING) ---
-app.post('/connect-v2', (req, res) => {
-    // Headers ko mask karo taaki original server jaisa lage
-    res.setHeader('Server', 'Apache/2.4.41 (Ubuntu)');
-    res.setHeader('X-Powered-By', 'PHP/7.4.33');
-    res.removeHeader('X-Powered-By'); // Express ka header hatao
-    res.removeHeader('x-render-origin-server'); // Render ka header hatao
-
-    res.json({
-        "status": true,
-        "data": {
-            "real": "FREEFIRE-sakiraimbot-UnknownDevice-Vm8Lk7Uj2JmsjCPVPVjrLa7zgfX3uz9E",
-            "token": "7fa4260a94d22cfebb6be17a8995c356",
-            "modname": "VIP MOD",
-            "mod_status": "Safe",
-            "credit": "MOD STATUS :- 100% SAFE",
-            "ESP": "on",
-            "expired_date": "2026-07-14 17:17:34",
-            "EXP": "2026-07-14 17:17:34",
-            "exdate": "2026-07-14 17:17:34",
-            "device": "10000",
-            "rng": "1784019129"
-        }
-    });
-});
