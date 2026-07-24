@@ -20,56 +20,27 @@ function saveDB() {
     fs.writeFileSync(DB_FILE, JSON.stringify(KEYS, null, 2));
 }
 
-// 🔥 FIX: GET request handle karo
+// 🔥 Original encrypted response (jo tune capture kiya)
+const ORIGINAL_ENCRYPTED = "K2h0zI8ViNtaDshPUZ8bT8qIDtCNypwdXEEtDcmPG8gPUAzKiE8NT1PcmNwKzI8QnJ1Kw0lVpyxXANYQ1vBB0bDh9qD3IrNzk6K0YPJjZtaRMBNH9kLTIrFjMtZC0wLkUFgKnASf2pCMyw3PCBqGXJ2a3Zqag9yPyAgJ5FHNT1wdXEDdgIAcGNxPkI8JjYmJzEBam1jbX9qTz8o0yFxcgFjT2B5fngUfX1mb2J4GWN9aHtnag9yKio/0jpGNG1obW4EwZiYnh+ehdwfmR1Y3AZYHdwY3E8hB1iCH5kCbDoeWt8ZXwBLTI=";
+
 app.get('/connec', (req, res) => {
-    // 🔥 FIX: Query params se data lo
-    const userKey = req.query.key;           // APK "key" bhej raha hai
-    const deviceId = req.query.device_id;    // APK "device_id" bhej raha hai
+    const userKey = req.query.key;
+    const deviceId = req.query.device_id;
 
     console.log(`📥 Request: key=${userKey}, device=${deviceId}`);
 
     const keyData = KEYS[userKey];
 
     if (!keyData) {
-        return res.json({ "status": false, "message": "Invalid Key!" });
-    }
-    if (!keyData.active) {
-        return res.json({ "status": false, "message": "Key Inactive!" });
+        return res.send(ORIGINAL_ENCRYPTED); // Invalid key pe bhi original response (ya error)
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    if (today > keyData.expiry) {
-        return res.json({ "status": false, "message": "Key has expired!" });
-    }
-
-    if (keyData.type === "trial") {
-        if (!keyData.usedDevices.includes(deviceId) && keyData.usedDevices.length < keyData.maxDevices) {
-            keyData.usedDevices.push(deviceId);
-            saveDB();
-        }
-        if (!keyData.usedDevices.includes(deviceId)) {
-            return res.json({ "status": false, "message": "Limit reached!" });
-        }
-    } else {
-        if (keyData.lockedDevice === null) {
-            keyData.lockedDevice = deviceId;
-            saveDB();
-        }
-        if (keyData.lockedDevice !== deviceId) {
-            return res.json({ "status": false, "message": "Key is locked to another device!" });
-        }
-    }
-
-    // 🔥 Original response format match karo
-    res.json({
-        "status": true,
-        "message": "Login Successful",
-        "access": 1,
-        "provider": "google",
-        "validity": 30,
-        "login": 1,
-        "expired": 0
+    // 🔥 Hamesha original encrypted response bhejo
+    res.set({
+        'Content-Type': 'text/html; charset=UTF-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate'
     });
+    res.send(ORIGINAL_ENCRYPTED);
 });
 
 const PORT = process.env.PORT || 3000;
