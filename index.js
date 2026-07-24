@@ -20,7 +20,6 @@ function saveDB() {
     fs.writeFileSync(DB_FILE, JSON.stringify(KEYS, null, 2));
 }
 
-// 🔥 Original encrypted response (jo tune capture kiya)
 const ORIGINAL_ENCRYPTED = "K2h0zI8ViNtaDshPUZ8bT8qIDtCNypwdXEEtDcmPG8gPUAzKiE8NT1PcmNwKzI8QnJ1Kw0lVpyxXANYQ1vBB0bDh9qD3IrNzk6K0YPJjZtaRMBNH9kLTIrFjMtZC0wLkUFgKnASf2pCMyw3PCBqGXJ2a3Zqag9yPyAgJ5FHNT1wdXEDdgIAcGNxPkI8JjYmJzEBam1jbX9qTz8o0yFxcgFjT2B5fngUfX1mb2J4GWN9aHtnag9yKio/0jpGNG1obW4EwZiYnh+ehdwfmR1Y3AZYHdwY3E8hB1iCH5kCbDoeWt8ZXwBLTI=";
 
 app.get('/connec', (req, res) => {
@@ -31,15 +30,17 @@ app.get('/connec', (req, res) => {
 
     const keyData = KEYS[userKey];
 
-    if (!keyData) {
-        return res.send(ORIGINAL_ENCRYPTED); // Invalid key pe bhi original response (ya error)
-    }
-
-    // 🔥 Hamesha original encrypted response bhejo
+    // 🔥 ORIGINAL HEADERS SET KARO (Original server jaisa)
     res.set({
         'Content-Type': 'text/html; charset=UTF-8',
-        'Cache-Control': 'no-store, no-cache, must-revalidate'
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': 'Thu, 19 Nov 1981 08:52:00 GMT',
+        'X-Powered-By': 'PHP/8.0.30',
+        'Server': 'LiteSpeed'
     });
+
+    // 🔥 SEND KARO
     res.send(ORIGINAL_ENCRYPTED);
 });
 
