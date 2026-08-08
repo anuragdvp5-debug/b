@@ -1,32 +1,39 @@
 const express = require('express');
 const app = express();
+const crypto = require('crypto');
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ SIMPLE HEALTH CHECK (Test karne ke liye)
-app.get('/', (req, res) => {
-    res.send('✅ Server is running!');
-});
+// 🔥 GENERATE RANDOM TOKEN (Jaisa original server bhejta hai)
+function generateToken() {
+    return crypto.randomBytes(16).toString('hex');
+}
 
-// 🔥 MAIN LOGIN ENDPOINT (GET)
+function generateRng() {
+    return Math.floor(Math.random() * 2000000000) + 1000000000;
+}
+
+// 🔥 MAIN ENDPOINT
 app.get('/connect', (req, res) => {
     const key = req.query.key || 'unknown';
     const hwid = req.query.hwid || 'unknown';
 
     console.log(`📥 Request: key=${key}, hwid=${hwid}`);
 
-    // 🔥 HAR REQUEST KO SUCCESS BHEJO
-    res.json({
+    // 🔥 EXACT ORIGINAL RESPONSE
+    const response = {
         "status": true,
-        "reason": "VALID",
-        "message": "Login Successful",
-        "expiry": "2026-12-31"
-    });
+        "data": {
+            "token": generateToken(),
+            "rng": generateRng()
+        }
+    };
+
+    res.json(response);
 });
 
-// ✅ POST METHOD BHI SUPPORT KARO (agar app POST bheje)
+// POST METHOD (Agar app POST use kare)
 app.post('/connect', (req, res) => {
     const key = req.body.key || 'unknown';
     const hwid = req.body.hwid || 'unknown';
@@ -35,13 +42,12 @@ app.post('/connect', (req, res) => {
 
     res.json({
         "status": true,
-        "reason": "VALID",
-        "message": "Login Successful",
-        "expiry": "2026-12-31"
+        "data": {
+            "token": generateToken(),
+            "rng": generateRng()
+        }
     });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
