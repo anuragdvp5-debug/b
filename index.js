@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const DB_FILE = './database.json';
+const DB_FILE = 'connect/database.json';
 
 let KEYS = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE)) : {
     "B2ALTRIAL": { type: "pro", active: true, expiry: "2026-07-26", lockedDevice: null },
