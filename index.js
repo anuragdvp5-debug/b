@@ -3,6 +3,7 @@ const app = express();
 const crypto = require('crypto');
 const fs = require('fs');
 
+// ======================== MIDDLEWARE ========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -12,17 +13,25 @@ app.use((req, res, next) => {
     next();
 });
 
+// ======================== CONFIG ========================
 const SECRET_KEY = "Vm8Lk7Uj2JmsjCPVPVjrLa7zgfx3uz9E";
 const KEYS_FILE = './keys.json';
 let keysDB = {};
 
-// ======================== LOAD KEYS ========================
+// ======================== LOAD / RESET KEYS ========================
 function loadKeys() {
     try {
         if (fs.existsSync(KEYS_FILE)) {
             const data = fs.readFileSync(KEYS_FILE, 'utf8');
             keysDB = JSON.parse(data);
-            console.log(`✅ Loaded ${Object.keys(keysDB).length} registered keys`);
+            console.log(`✅ Loaded ${Object.keys(keysDB).length} keys from database`);
+            
+            // 🔥 Agar 4 keys nahi hain toh force reset
+            if (Object.keys(keysDB).length < 4) {
+                console.log('⚠️ Less than 4 keys found. Resetting to default...');
+                initializeDefaultKeys();
+                saveKeys();
+            }
         } else {
             console.log('📝 No keys file found. Creating default keys...');
             initializeDefaultKeys();
@@ -30,7 +39,8 @@ function loadKeys() {
         }
     } catch (error) {
         console.error('❌ Error loading keys:', error);
-        keysDB = {};
+        initializeDefaultKeys();
+        saveKeys();
     }
 }
 
@@ -43,34 +53,37 @@ function saveKeys() {
     }
 }
 
-// ======================== DEFAULT KEYS ========================
+// ======================== INITIALIZE 4 KEYS ========================
 function initializeDefaultKeys() {
+    // 🔥 Force clear existing keys
+    keysDB = {};
+    
     const users = [
-        { user_key: 'anurag1_device_001' },
-        { user_key: 'anurag2_device_002' },
-        { user_key: 'anurag3_device_003' },
-        { user_key: 'anurag4_device_004' }
+        'anurag1_device_001',
+        'anurag2_device_002',
+        'anurag3_device_003',
+        'anurag4_device_004'
     ];
     
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30);
     
-    users.forEach(user => {
-        const deviceId = crypto.createHash('md5').update(user.user_key).digest('hex');
+    users.forEach(userKey => {
+        const deviceId = crypto.createHash('md5').update(userKey).digest('hex');
         keysDB[deviceId] = {
-            user_key: user.user_key,
+            user_key: userKey,
             created_at: new Date().toISOString(),
             expiry: expiryDate.toISOString(),
             is_active: true
         };
     });
     
-    console.log(`✅ Initialized 4 default keys`);
+    console.log(`✅ Initialized ${users.length} default keys`);
+    console.log(`📅 All keys expire on: ${expiryDate.toISOString()}`);
 }
 
 // ======================== TOKEN GENERATION ========================
 function generateToken(user_key, serial) {
-    // 🔥 Purana formula - user_key + serial + secret
     const data = `PUBG-${user_key}-${serial}-${SECRET_KEY}`;
     return crypto.createHash('md5').update(data).digest('hex');
 }
@@ -93,9 +106,9 @@ app.post('/connect/*', (req, res) => {
     }
     
     console.log(`🔑 Received Key: ${user_key}`);
-    console.log(`📱 Serial: ${serial}`);
+    console.log(`📱 Serial: ${serial || 'N/A'}`);
     
-    // 🔥 Key verification - Sirf user_key se
+    // 🔥 Check if key exists in database
     const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
     const deviceRecord = keysDB[deviceId];
     
@@ -107,6 +120,7 @@ app.post('/connect/*', (req, res) => {
         });
     }
     
+    // 🔥 Check expiry
     const now = new Date();
     const expiry = new Date(deviceRecord.expiry);
     if (now > expiry) {
@@ -117,8 +131,8 @@ app.post('/connect/*', (req, res) => {
         });
     }
     
-    // ✅ Token generate - user_key + serial (jo app bhej rahi hai)
-    const token = generateToken(user_key, serial);
+    // ✅ ALL CHECKS PASSED - Generate token
+    const token = generateToken(user_key, serial || 'device_001');
     const rng = generateRng();
     
     console.log(`✅ Login success: ${user_key}`);
@@ -133,12 +147,17 @@ app.post('/connect/*', (req, res) => {
     });
 });
 
-// ======================== API: CREATE KEY (Admin) ========================
+// ======================== ADMIN APIs ========================
+
+// 📌 Create New Key
 app.post('/admin/create-key', (req, res) => {
     const { user_key, expiry_days = 30 } = req.body;
     
     if (!user_key) {
-        return res.status(400).json({ success: false, error: 'Missing user_key' });
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Missing user_key' 
+        });
     }
     
     const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
@@ -148,7 +167,11 @@ app.post('/admin/create-key', (req, res) => {
     if (keysDB[deviceId]) {
         return res.status(409).json({
             success: false,
-            error: 'Key already exists!'
+            error: 'Key already exists!',
+            existing: {
+                user_key: keysDB[deviceId].user_key,
+                expiry: keysDB[deviceId].expiry
+            }
         });
     }
     
@@ -169,7 +192,7 @@ app.post('/admin/create-key', (req, res) => {
     });
 });
 
-// ======================== API: CHECK KEY STATUS ========================
+// 📌 Check Key Status
 app.get('/admin/check-key', (req, res) => {
     const { user_key } = req.query;
     
@@ -181,7 +204,10 @@ app.get('/admin/check-key', (req, res) => {
     const record = keysDB[deviceId];
     
     if (!record) {
-        return res.json({ registered: false, message: '❌ Key not found' });
+        return res.json({ 
+            registered: false, 
+            message: '❌ Key not found' 
+        });
     }
     
     const now = new Date();
@@ -192,14 +218,16 @@ app.get('/admin/check-key', (req, res) => {
     res.json({
         registered: true,
         user_key: record.user_key,
+        created_at: record.created_at,
         expiry: record.expiry,
         is_expired: isExpired,
         days_remaining: daysRemaining,
-        is_active: record.is_active
+        is_active: record.is_active,
+        status: isExpired ? 'EXPIRED' : (record.is_active ? 'ACTIVE' : 'REVOKED')
     });
 });
 
-// ======================== API: EXTEND EXPIRY ========================
+// 📌 Extend Expiry
 app.post('/admin/extend-key', (req, res) => {
     const { user_key, extra_days = 30 } = req.body;
     
@@ -230,7 +258,7 @@ app.post('/admin/extend-key', (req, res) => {
     });
 });
 
-// ======================== API: REVOKE KEY ========================
+// 📌 Revoke Key
 app.post('/admin/revoke-key', (req, res) => {
     const { user_key } = req.body;
     
@@ -248,10 +276,13 @@ app.post('/admin/revoke-key', (req, res) => {
     saveKeys();
     
     console.log(`🚫 Key revoked for ${user_key}`);
-    res.json({ success: true, message: `🚫 Key revoked for ${user_key}` });
+    res.json({ 
+        success: true, 
+        message: `🚫 Key revoked for ${user_key}` 
+    });
 });
 
-// ======================== API: LIST ALL KEYS ========================
+// 📌 List All Keys
 app.get('/admin/list-keys', (req, res) => {
     const keys = Object.entries(keysDB).map(([deviceId, record]) => {
         const now = new Date();
@@ -267,28 +298,35 @@ app.get('/admin/list-keys', (req, res) => {
         };
     });
     
-    res.json({ total: keys.length, keys: keys });
-});
-
-// ======================== HEALTH CHECK ========================
-app.get('/', (req, res) => {
-    res.json({
-        status: "Server is running!",
-        total_keys: Object.keys(keysDB).length,
-        users: Object.values(keysDB).map(u => u.user_key)
+    res.json({ 
+        total: keys.length, 
+        keys: keys 
     });
 });
 
-// ======================== START ========================
+// 📌 Health Check
+app.get('/', (req, res) => {
+    res.json({
+        status: "🚀 Server is running!",
+        total_keys: Object.keys(keysDB).length,
+        registered_users: Object.values(keysDB).map(u => u.user_key)
+    });
+});
+
+// ======================== START SERVER ========================
 loadKeys();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`\n🔑 App Mein Yeh Key Daalein:`);
-    console.log(`   ──────────────────────────────────────`);
-    console.log(`   ✅ anurag1_device_001`);
-    console.log(`   ✅ anurag2_device_002`);
-    console.log(`   ✅ anurag3_device_003`);
-    console.log(`   ✅ anurag4_device_004`);
-    console.log(`   ──────────────────────────────────────`);
+    console.log(`\n✅ ===== REGISTERED KEYS =====`);
+    Object.values(keysDB).forEach(u => {
+        console.log(`   🔑 ${u.user_key}`);
+    });
+    console.log(`   📅 Expires in 30 days`);
+    console.log(`\n📋 Admin Commands:`);
+    console.log(`   GET  /admin/list-keys`);
+    console.log(`   GET  /admin/check-key?user_key=...`);
+    console.log(`   POST /admin/create-key`);
+    console.log(`   POST /admin/extend-key`);
+    console.log(`   POST /admin/revoke-key`);
 });
