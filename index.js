@@ -84,49 +84,38 @@ function generateRng() {
     return Math.floor(Math.random() * 2000000000) + 1000000000;
 }
 
-function generateRandomKey() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let key = '';
-    for (let i = 0; i < 16; i++) {
-        key += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return key;
-}
-
 // ======================== API: APP LOGIN ========================
 app.post('/connect/*', (req, res) => {
     console.log(`\n📥 Login attempt:`, req.body);
     
-    const { game, user_key, serial, key } = req.body;
+    const { game, user_key, serial } = req.body;
     
-    // 🔥 Support multiple formats
+    // 🔥 Smart parsing
     let finalUserKey = null;
     let finalSerial = null;
     
-    // Format 1: user_key = "anurag1_device_001"
+    // Case 1: user_key = "anurag1_device_001" (combined)
     if (user_key && user_key.includes('_')) {
         const parts = user_key.split('_');
         if (parts.length === 2) {
-            finalUserKey = parts[0];
-            finalSerial = parts[1];
+            // Check if parts[1] is a device ID (32 char hex)
+            if (/^[0-9a-f]{32}$/i.test(parts[1])) {
+                finalUserKey = parts[0];
+                finalSerial = parts[1];
+            } else {
+                finalUserKey = parts[0];
+                finalSerial = parts[1];
+            }
         }
     }
-    // Format 2: user_key = "anurag1", serial = "device_001"
+    // Case 2: user_key = "anurag1", serial = "device_id"
     else if (user_key && serial) {
         finalUserKey = user_key;
         finalSerial = serial;
     }
-    // Format 3: key = "anurag1_device_001"
-    else if (key && key.includes('_')) {
-        const parts = key.split('_');
-        if (parts.length === 2) {
-            finalUserKey = parts[0];
-            finalSerial = parts[1];
-        }
-    }
     
     if (!finalUserKey || !finalSerial) {
-        console.log(`❌ Invalid key format`);
+        console.log(`❌ Invalid format: user_key=${user_key}, serial=${serial}`);
         return res.status(400).json({
             status: false,
             reason: 'Invalid key format! Use: username_serial'
@@ -138,7 +127,6 @@ app.post('/connect/*', (req, res) => {
     const deviceId = generateDeviceId(finalUserKey, finalSerial);
     const deviceRecord = keysDB[deviceId];
     
-    // 🔥 Check if device has valid key
     if (!deviceRecord || !deviceRecord.is_active) {
         console.log(`❌ Device ${finalUserKey} not registered`);
         return res.status(403).json({
@@ -147,7 +135,6 @@ app.post('/connect/*', (req, res) => {
         });
     }
     
-    // 🔥 Check expiry
     const now = new Date();
     const expiry = new Date(deviceRecord.expiry);
     if (now > expiry) {
@@ -158,7 +145,6 @@ app.post('/connect/*', (req, res) => {
         });
     }
     
-    // ✅ ALL CHECKS PASSED
     const token = generateToken(finalUserKey, finalSerial);
     const rng = generateRng();
     
@@ -173,19 +159,15 @@ app.post('/connect/*', (req, res) => {
     });
 });
 
-// ======================== API: CREATE KEY (Admin) ========================
+// ======================== API: ADMIN FUNCTIONS ========================
 app.post('/admin/create-key', (req, res) => {
     const { user_key, serial, expiry_days = 30 } = req.body;
     
     if (!user_key || !serial) {
-        return res.status(400).json({
-            success: false,
-            error: 'Missing user_key or serial'
-        });
+        return res.status(400).json({ success: false, error: 'Missing user_key or serial' });
     }
     
     const deviceId = generateDeviceId(user_key, serial);
-    const key = `${user_key}_${serial}`;
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + expiry_days);
     
@@ -193,11 +175,7 @@ app.post('/admin/create-key', (req, res) => {
         return res.status(409).json({
             success: false,
             error: 'Device already has a key!',
-            existing: {
-                user_key: keysDB[deviceId].user_key,
-                serial: keysDB[deviceId].serial,
-                expiry: keysDB[deviceId].expiry
-            }
+            existing: { user_key: keysDB[deviceId].user_key, serial: keysDB[deviceId].serial }
         });
     }
     
@@ -210,10 +188,10 @@ app.post('/admin/create-key', (req, res) => {
     };
     saveKeys();
     
-    console.log(`🔑 New key created: ${key}`);
+    console.log(`🔑 New key created: ${user_key}_${serial}`);
     res.json({
         success: true,
-        key: key,
+        key: `${user_key}_${serial}`,
         user_key: user_key,
         serial: serial,
         expiry: expiryDate.toISOString(),
@@ -221,7 +199,6 @@ app.post('/admin/create-key', (req, res) => {
     });
 });
 
-// ======================== API: CHECK KEY STATUS ========================
 app.get('/admin/check-key', (req, res) => {
     const { user_key, serial } = req.query;
     
@@ -233,10 +210,7 @@ app.get('/admin/check-key', (req, res) => {
     const record = keysDB[deviceId];
     
     if (!record) {
-        return res.json({
-            registered: false,
-            message: '❌ Device not registered'
-        });
+        return res.json({ registered: false, message: '❌ Device not registered' });
     }
     
     const now = new Date();
@@ -248,16 +222,13 @@ app.get('/admin/check-key', (req, res) => {
         registered: true,
         user_key: record.user_key,
         serial: record.serial,
-        created_at: record.created_at,
         expiry: record.expiry,
         is_expired: isExpired,
         days_remaining: daysRemaining,
-        is_active: record.is_active,
-        status: isExpired ? 'EXPIRED' : (record.is_active ? 'ACTIVE' : 'REVOKED')
+        is_active: record.is_active
     });
 });
 
-// ======================== API: EXTEND EXPIRY ========================
 app.post('/admin/extend-key', (req, res) => {
     const { user_key, serial, extra_days = 30 } = req.body;
     
@@ -288,7 +259,6 @@ app.post('/admin/extend-key', (req, res) => {
     });
 });
 
-// ======================== API: REVOKE KEY ========================
 app.post('/admin/revoke-key', (req, res) => {
     const { user_key, serial } = req.body;
     
@@ -306,13 +276,9 @@ app.post('/admin/revoke-key', (req, res) => {
     saveKeys();
     
     console.log(`🚫 Key revoked for ${user_key}`);
-    res.json({
-        success: true,
-        message: `🚫 Key revoked for ${user_key}`
-    });
+    res.json({ success: true, message: `🚫 Key revoked for ${user_key}` });
 });
 
-// ======================== API: LIST ALL KEYS ========================
 app.get('/admin/list-keys', (req, res) => {
     const keys = Object.entries(keysDB).map(([deviceId, record]) => {
         const now = new Date();
@@ -329,13 +295,9 @@ app.get('/admin/list-keys', (req, res) => {
         };
     });
     
-    res.json({
-        total: keys.length,
-        keys: keys
-    });
+    res.json({ total: keys.length, keys: keys });
 });
 
-// ======================== HEALTH CHECK ========================
 app.get('/', (req, res) => {
     res.json({
         status: "Server is running!",
@@ -344,23 +306,16 @@ app.get('/', (req, res) => {
     });
 });
 
-// ======================== START SERVER ========================
+// ======================== START ========================
 loadKeys();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`\n🔑 App Mein Yeh Key Daalein (User Key field mein):`);
+    console.log(`\n🔑 App Mein Key Daalein:`);
     console.log(`   ──────────────────────────────────────`);
     console.log(`   ✅ anurag1_device_001`);
     console.log(`   ✅ anurag2_device_002`);
     console.log(`   ✅ anurag3_device_003`);
     console.log(`   ✅ anurag4_device_004`);
     console.log(`   ──────────────────────────────────────`);
-    console.log(`\n📅 All keys expire in 30 days`);
-    console.log(`\n🔧 Admin Commands:`);
-    console.log(`   POST /admin/create-key`);
-    console.log(`   GET  /admin/check-key?user_key=...&serial=...`);
-    console.log(`   POST /admin/extend-key`);
-    console.log(`   POST /admin/revoke-key`);
-    console.log(`   GET  /admin/list-keys`);
 });
