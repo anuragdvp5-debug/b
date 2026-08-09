@@ -12,9 +12,12 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ EXACT ORIGINAL TOKEN GENERATION
+// 🔥 ORIGINAL TOKEN (Hardcoded - App validate karega)
+const ORIGINAL_TOKEN = "8e92d21a2ad69764d3d2d7a1c76f03da";
+
+// ✅ Token Generate (Fixed original token)
 function generateToken() {
-    return crypto.randomBytes(16).toString('hex');
+    return ORIGINAL_TOKEN;
 }
 
 function generateRng() {
