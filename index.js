@@ -12,7 +12,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Token generate (Original format)
+// ✅ Token Generate (Original format)
 function generateToken() {
     return crypto.randomBytes(16).toString('hex');
 }
@@ -21,16 +21,19 @@ function generateRng() {
     return Math.floor(Math.random() * 2000000000) + 1000000000;
 }
 
-// ✅ POST Endpoint with FULL logging
+// ✅ POST Endpoint - App ke exact fields ke hisaab se
 app.post('/connect/*', (req, res) => {
     console.log(`\n🔍 ===== REQUEST RECEIVED =====`);
-    console.log(`📥 Headers:`, req.headers);
     console.log(`📥 Body:`, req.body);
-    console.log(`📥 Query:`, req.query);
-    console.log(`📥 Params:`, req.params);
     
-    const key = req.body.key || req.query.key || 'unknown';
-    const hwid = req.body.hwid || req.query.hwid || 'unknown';
+    // ✅ App ke exact field names use karein
+    const game = req.body.game || 'unknown';
+    const user_key = req.body.user_key || 'unknown';
+    const serial = req.body.serial || 'unknown';
+    
+    console.log(`🎮 Game: ${game}`);
+    console.log(`🔑 User Key: ${user_key}`);
+    console.log(`📱 Serial: ${serial}`);
     
     const token = generateToken();
     const rng = generateRng();
@@ -50,22 +53,19 @@ app.post('/connect/*', (req, res) => {
     res.json(response);
 });
 
-// ✅ GET Endpoint
+// ✅ GET Endpoint (Agar GET use kare)
 app.get('/connect/*', (req, res) => {
-    console.log(`\n🔍 ===== GET REQUEST =====`);
-    console.log(`📥 Query:`, req.query);
+    const game = req.query.game || 'unknown';
+    const user_key = req.query.user_key || 'unknown';
+    const serial = req.query.serial || 'unknown';
     
-    const key = req.query.key || 'unknown';
-    const hwid = req.query.hwid || 'unknown';
-    
-    const token = generateToken();
-    const rng = generateRng();
+    console.log(`📥 GET: game=${game}, user_key=${user_key}, serial=${serial}`);
     
     res.json({
         "status": true,
         "data": {
-            "token": token,
-            "rng": rng
+            "token": generateToken(),
+            "rng": generateRng()
         }
     });
 });
