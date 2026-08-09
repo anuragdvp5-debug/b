@@ -5,14 +5,14 @@ const crypto = require('crypto');
 // ✅ Headers
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     next();
 });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Token Generate (Original format)
+// ✅ EXACT ORIGINAL TOKEN GENERATION
 function generateToken() {
     return crypto.randomBytes(16).toString('hex');
 }
@@ -21,27 +21,27 @@ function generateRng() {
     return Math.floor(Math.random() * 2000000000) + 1000000000;
 }
 
-// ✅ POST Endpoint - App ke exact fields ke hisaab se
+// ✅ POST Endpoint
 app.post('/connect/*', (req, res) => {
     console.log(`\n🔍 ===== REQUEST RECEIVED =====`);
     console.log(`📥 Body:`, req.body);
     
-    // ✅ App ke exact field names use karein
     const game = req.body.game || 'unknown';
     const user_key = req.body.user_key || 'unknown';
     const serial = req.body.serial || 'unknown';
     
-    console.log(`🎮 Game: ${game}`);
-    console.log(`🔑 User Key: ${user_key}`);
-    console.log(`📱 Serial: ${serial}`);
-    
+    // ✅ Token generate karein
     const token = generateToken();
     const rng = generateRng();
     
-    console.log(`🔑 Generated Token: ${token} (Length: ${token.length})`);
-    console.log(`🔢 Generated RNG: ${rng}`);
+    console.log(`🎮 Game: ${game}`);
+    console.log(`🔑 User Key: ${user_key}`);
+    console.log(`📱 Serial: ${serial}`);
+    console.log(`🔑 Token: ${token} (Length: ${token.length})`);
+    console.log(`🔢 RNG: ${rng}`);
     console.log(`================================\n`);
     
+    // ✅ EXACT RESPONSE (Original jaisa)
     const response = {
         "status": true,
         "data": {
@@ -53,13 +53,11 @@ app.post('/connect/*', (req, res) => {
     res.json(response);
 });
 
-// ✅ GET Endpoint (Agar GET use kare)
+// ✅ GET Endpoint
 app.get('/connect/*', (req, res) => {
     const game = req.query.game || 'unknown';
     const user_key = req.query.user_key || 'unknown';
     const serial = req.query.serial || 'unknown';
-    
-    console.log(`📥 GET: game=${game}, user_key=${user_key}, serial=${serial}`);
     
     res.json({
         "status": true,
