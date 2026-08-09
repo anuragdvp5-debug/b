@@ -16,7 +16,6 @@ const SECRET_KEY = "Vm8Lk7Uj2JmsjCPVPVjrLa7zgfx3uz9E";
 const KEYS_FILE = './keys.json';
 let keysDB = {};
 
-// ======================== LOAD / SAVE KEYS ========================
 function loadKeys() {
     try {
         if (fs.existsSync(KEYS_FILE)) {
@@ -43,7 +42,6 @@ function saveKeys() {
     }
 }
 
-// ======================== INITIALIZE 4 KEYS ========================
 function initializeDefaultKeys() {
     const users = [
         { user_key: 'anurag1', serial: 'device_001' },
@@ -67,10 +65,8 @@ function initializeDefaultKeys() {
     });
     
     console.log(`✅ Initialized 4 keys for: anurag1, anurag2, anurag3, anurag4`);
-    console.log(`📅 All keys expire on: ${expiryDate.toISOString()}`);
 }
 
-// ======================== HELPER FUNCTIONS ========================
 function generateDeviceId(user_key, serial) {
     return crypto.createHash('md5').update(`${user_key}-${serial}`).digest('hex');
 }
@@ -84,36 +80,29 @@ function generateRng() {
     return Math.floor(Math.random() * 2000000000) + 1000000000;
 }
 
-// ======================== API: APP LOGIN ========================
+// ======================== APP LOGIN ========================
 app.post('/connect/*', (req, res) => {
     console.log(`\n📥 Login attempt:`, req.body);
-    
+
     const { game, user_key, serial } = req.body;
-    
-    // 🔥 Smart parsing
+
     let finalUserKey = null;
     let finalSerial = null;
-    
-    // Case 1: user_key = "anurag1_device_001" (combined)
+
+    // ✅ Agar user_key mein "_" hai toh use karo
     if (user_key && user_key.includes('_')) {
         const parts = user_key.split('_');
         if (parts.length === 2) {
-            // Check if parts[1] is a device ID (32 char hex)
-            if (/^[0-9a-f]{32}$/i.test(parts[1])) {
-                finalUserKey = parts[0];
-                finalSerial = parts[1];
-            } else {
-                finalUserKey = parts[0];
-                finalSerial = parts[1];
-            }
+            finalUserKey = parts[0];
+            finalSerial = parts[1];
         }
     }
-    // Case 2: user_key = "anurag1", serial = "device_id"
+    // ✅ Agar alag se serial diya hai toh use karo
     else if (user_key && serial) {
         finalUserKey = user_key;
         finalSerial = serial;
     }
-    
+
     if (!finalUserKey || !finalSerial) {
         console.log(`❌ Invalid format: user_key=${user_key}, serial=${serial}`);
         return res.status(400).json({
@@ -121,12 +110,12 @@ app.post('/connect/*', (req, res) => {
             reason: 'Invalid key format! Use: username_serial'
         });
     }
-    
+
     console.log(`🔑 Parsed: user_key=${finalUserKey}, serial=${finalSerial}`);
-    
+
     const deviceId = generateDeviceId(finalUserKey, finalSerial);
     const deviceRecord = keysDB[deviceId];
-    
+
     if (!deviceRecord || !deviceRecord.is_active) {
         console.log(`❌ Device ${finalUserKey} not registered`);
         return res.status(403).json({
@@ -134,7 +123,7 @@ app.post('/connect/*', (req, res) => {
             reason: '❌ Device not registered! Contact admin to get key.'
         });
     }
-    
+
     const now = new Date();
     const expiry = new Date(deviceRecord.expiry);
     if (now > expiry) {
@@ -144,12 +133,12 @@ app.post('/connect/*', (req, res) => {
             reason: '⏰ Key expired! Contact admin for renewal.'
         });
     }
-    
+
     const token = generateToken(finalUserKey, finalSerial);
     const rng = generateRng();
-    
+
     console.log(`✅ Login success: ${finalUserKey}`);
-    
+
     res.json({
         "status": true,
         "data": {
@@ -159,7 +148,7 @@ app.post('/connect/*', (req, res) => {
     });
 });
 
-// ======================== API: ADMIN FUNCTIONS ========================
+// ======================== ADMIN APIs ========================
 app.post('/admin/create-key', (req, res) => {
     const { user_key, serial, expiry_days = 30 } = req.body;
     
@@ -174,8 +163,7 @@ app.post('/admin/create-key', (req, res) => {
     if (keysDB[deviceId]) {
         return res.status(409).json({
             success: false,
-            error: 'Device already has a key!',
-            existing: { user_key: keysDB[deviceId].user_key, serial: keysDB[deviceId].serial }
+            error: 'Device already has a key!'
         });
     }
     
@@ -311,7 +299,7 @@ loadKeys();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`\n🔑 App Mein Key Daalein:`);
+    console.log(`\n🔑 App Mein Yeh Key Daalein:`);
     console.log(`   ──────────────────────────────────────`);
     console.log(`   ✅ anurag1_device_001`);
     console.log(`   ✅ anurag2_device_002`);
