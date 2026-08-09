@@ -110,7 +110,7 @@ app.post('/connect/*', (req, res) => {
         console.log(`❌ Key not registered: ${user_key}`);
         return res.status(403).json({
             status: false,
-            reason: '❌ Invalid Key! Contact admin.'
+            reason: 'Invalid Key'
         });
     }
 
@@ -120,22 +120,29 @@ app.post('/connect/*', (req, res) => {
         console.log(`⏰ Key expired: ${user_key}`);
         return res.status(403).json({
             status: false,
-            reason: '⏰ Key expired! Contact admin for renewal.'
+            reason: 'Key Expired'
         });
     }
 
-    // ✅ ALL CHECKS PASSED - Return ONLY success
+    // ✅ ALL CHECKS PASSED - Generate token
+    const token = generateToken(user_key, serial || 'device_001');
+    const rng = generateRng();
+
     console.log(`✅ Login success: ${user_key}`);
+    console.log(`🔑 Token: ${token}`);
 
     res.json({
-        "status": true
-        // 🔥 No token, no rng, no keys!
+        "status": true,
+        "data": {
+            "token": token,
+            "rng": rng
+        }
     });
 });
 
-// ======================== ADMIN APIs (SECURE) ========================
+// ======================== ADMIN APIs (SECURE - NO KEYS EXPOSED) ========================
 
-// 📌 Create New Key (Admin Only)
+// 📌 Create New Key
 app.post('/admin/create-key', (req, res) => {
     const { user_key, expiry_days = 30 } = req.body;
 
@@ -169,7 +176,7 @@ app.post('/admin/create-key', (req, res) => {
     res.json({
         success: true,
         message: `✅ Key created! Valid for ${expiry_days} days.`
-        // 🔥 Key not exposed in response
+        // 🔥 No key returned
     });
 });
 
@@ -199,16 +206,23 @@ app.get('/admin/check-key', (req, res) => {
     res.json({ valid: true });
 });
 
-// 📌 List All Keys (Admin Only - Secure)
+// 📌 List All Keys (ONLY COUNT - NO KEYS EXPOSED)
 app.get('/admin/list-keys', (req, res) => {
-    // 🔥 Sirf count dikhao, keys nahi
+    const total = Object.keys(keysDB).length;
+    const active = Object.values(keysDB).filter(k => k.is_active).length;
+    const expired = Object.values(keysDB).filter(k => {
+        return new Date(k.expiry) < new Date();
+    }).length;
+
     res.json({
-        total: Object.keys(keysDB).length,
-        active: Object.values(keysDB).filter(k => k.is_active).length
+        total: total,
+        active: active,
+        expired: expired
+        // 🔥 No keys, no user_key, no serial
     });
 });
 
-// 📌 Extend Expiry (Admin Only)
+// 📌 Extend Expiry
 app.post('/admin/extend-key', (req, res) => {
     const { user_key, extra_days = 30 } = req.body;
 
@@ -234,10 +248,11 @@ app.post('/admin/extend-key', (req, res) => {
     res.json({
         success: true,
         message: `✅ Key extended by ${extra_days} days`
+        // 🔥 No key returned
     });
 });
 
-// 📌 Revoke Key (Admin Only)
+// 📌 Revoke Key
 app.post('/admin/revoke-key', (req, res) => {
     const { user_key } = req.body;
 
@@ -266,6 +281,7 @@ app.get('/', (req, res) => {
     res.json({
         status: "🚀 Server is running!",
         total_keys: Object.keys(keysDB).length
+        // 🔥 No keys exposed
     });
 });
 
@@ -274,9 +290,9 @@ loadKeys();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`\n✅ ===== REGISTERED KEYS =====`);
+    console.log(`\n✅ ===== REGISTERED KEYS (Hidden from public) =====`);
     Object.values(keysDB).forEach(u => {
         console.log(`   🔑 ${u.user_key}`);
     });
-    console.log(`\n🔒 Secure Mode: Keys not exposed in responses`);
+    console.log(`\n🔒 Secure Mode: Keys not exposed in any response`);
 });
