@@ -38,6 +38,7 @@ const KEYS = {
     "anurag2_device_002": { expiry: "2026-10-15" },
     "anurag3_device_003": { expiry: "2026-08-20" },
     "anurag4_device_004": { expiry: "2026-12-31" },
+    "suraj": { expiry: "2026-12-31" },
     "newuser_device_005": { expiry: "2026-09-10" }
 };
 
