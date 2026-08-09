@@ -14,8 +14,8 @@ function generateRng() {
     return Math.floor(Math.random() * 2000000000) + 1000000000;
 }
 
-// 🔥 MAIN ENDPOINT
-app.get('/connect', (req, res) => {
+// 🔥 MAIN ENDPOINT - /connect/ke baad kuch bhi aaye handle karega
+app.get('/connect/*', (req, res) => {
     const key = req.query.key || 'unknown';
     const hwid = req.query.hwid || 'unknown';
 
@@ -33,8 +33,8 @@ app.get('/connect', (req, res) => {
     res.json(response);
 });
 
-// POST METHOD (Agar app POST use kare)
-app.post('/connect', (req, res) => {
+// POST METHOD - /connect/ke baad kuch bhi aaye handle karega
+app.post('/connect/*', (req, res) => {
     const key = req.body.key || 'unknown';
     const hwid = req.body.hwid || 'unknown';
 
