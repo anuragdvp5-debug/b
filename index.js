@@ -45,11 +45,12 @@ function saveKeys() {
 
 // ======================== DEFAULT KEYS ========================
 function initializeDefaultKeys() {
+    // 🔥 Users with their actual device serials
     const users = [
-        { user_key: 'anurag1', serial: 'device_001' },
-        { user_key: 'anurag2', serial: 'device_002' },
-        { user_key: 'anurag3', serial: 'device_003' },
-        { user_key: 'anurag4', serial: 'device_004' }
+        { user_key: 'anurag1', serial: '27e458c5994a860c7e71ffe23278bb43' },
+        { user_key: 'anurag2', serial: '27e458c5994a860c7e71ffe23278bb43' },
+        { user_key: 'anurag3', serial: '27e458c5994a860c7e71ffe23278bb43' },
+        { user_key: 'anurag4', serial: '27e458c5994a860c7e71ffe23278bb43' }
     ];
     
     const expiryDate = new Date();
@@ -66,7 +67,7 @@ function initializeDefaultKeys() {
         };
     });
     
-    console.log(`✅ Initialized 4 default keys`);
+    console.log(`✅ Initialized 4 default keys with device serials`);
 }
 
 // ======================== HELPER FUNCTIONS ========================
@@ -97,10 +98,12 @@ app.post('/connect/*', (req, res) => {
         });
     }
     
-    // 🔥 Generate device ID
+    // 🔥 Generate device ID using BOTH user_key and serial
     const deviceId = generateDeviceId(user_key, serial);
     const deviceRecord = keysDB[deviceId];
     
+    console.log(`🔑 User Key: ${user_key}`);
+    console.log(`📱 Serial: ${serial}`);
     console.log(`🔑 Device ID: ${deviceId}`);
     
     // 🔥 CHECK 1: Is device registered?
@@ -328,7 +331,7 @@ app.listen(PORT, () => {
     console.log(`\n🚀 Server running on port ${PORT}`);
     console.log(`\n🔑 Registered Users:`);
     Object.values(keysDB).forEach(u => {
-        console.log(`   ✅ ${u.user_key}_${u.serial}`);
+        console.log(`   ✅ ${u.user_key} (Serial: ${u.serial})`);
     });
     console.log(`\n📅 All keys expire in 30 days`);
 });
