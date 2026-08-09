@@ -34,9 +34,9 @@ function saveBindings() {
 
 // ==================== KEYS ====================
 const KEYS = {
-    "anurag1_device_001": { expiry: "2026-09-30" },
-    "anurag": { expiry: "2026-12-31" },
-    "suraj": { expiry: "2026-12-31" },
+    "anurag1_device_001": { expiry: "2026-06-30" },
+    "anurag": { expiry: "2026-02-03" },
+    "suraj": { expiry: "2026-02-03" },
     "newuser_device_005": { expiry: "2026-09-10" }
 };
 
