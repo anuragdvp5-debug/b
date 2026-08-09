@@ -45,7 +45,6 @@ function saveKeys() {
 
 // ======================== DEFAULT KEYS ========================
 function initializeDefaultKeys() {
-    // 🔥 Sirf user_key ko hi key maano
     const users = [
         { user_key: 'anurag1_device_001' },
         { user_key: 'anurag2_device_002' },
@@ -70,8 +69,9 @@ function initializeDefaultKeys() {
 }
 
 // ======================== TOKEN GENERATION ========================
-function generateToken(user_key) {
-    const data = `PUBG-${user_key}-${SECRET_KEY}`;
+function generateToken(user_key, serial) {
+    // 🔥 Purana formula - user_key + serial + secret
+    const data = `PUBG-${user_key}-${serial}-${SECRET_KEY}`;
     return crypto.createHash('md5').update(data).digest('hex');
 }
 
@@ -83,8 +83,7 @@ function generateRng() {
 app.post('/connect/*', (req, res) => {
     console.log(`\n📥 Login attempt:`, req.body);
     
-    // 🔥 SIRF user_key lo, serial ko ignore karo
-    const { user_key } = req.body;
+    const { user_key, serial } = req.body;
     
     if (!user_key) {
         return res.status(400).json({
@@ -94,8 +93,9 @@ app.post('/connect/*', (req, res) => {
     }
     
     console.log(`🔑 Received Key: ${user_key}`);
+    console.log(`📱 Serial: ${serial}`);
     
-    // 🔥 user_key ko seedha deviceId banake check karo
+    // 🔥 Key verification - Sirf user_key se
     const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
     const deviceRecord = keysDB[deviceId];
     
@@ -107,7 +107,6 @@ app.post('/connect/*', (req, res) => {
         });
     }
     
-    // 🔥 Check expiry
     const now = new Date();
     const expiry = new Date(deviceRecord.expiry);
     if (now > expiry) {
@@ -118,8 +117,8 @@ app.post('/connect/*', (req, res) => {
         });
     }
     
-    // ✅ ALL CHECKS PASSED
-    const token = generateToken(user_key);
+    // ✅ Token generate - user_key + serial (jo app bhej rahi hai)
+    const token = generateToken(user_key, serial);
     const rng = generateRng();
     
     console.log(`✅ Login success: ${user_key}`);
