@@ -1,7 +1,6 @@
 const express = require('express');
 const app = express();
 const crypto = require('crypto');
-const fs = require('fs');
 
 // ======================== MIDDLEWARE ========================
 app.use(express.json());
@@ -15,67 +14,25 @@ app.use((req, res, next) => {
 
 // ======================== CONFIG ========================
 const SECRET_KEY = "Vm8Lk7Uj2JmsjCPVPVjrLa7zgfx3uz9E";
-const KEYS_FILE = './keys.json';
-let keysDB = {};
 
-// ======================== LOAD / RESET KEYS ========================
-function loadKeys() {
-    try {
-        if (fs.existsSync(KEYS_FILE)) {
-            const data = fs.readFileSync(KEYS_FILE, 'utf8');
-            keysDB = JSON.parse(data);
-            console.log(`✅ Loaded ${Object.keys(keysDB).length} keys from database`);
-
-            if (Object.keys(keysDB).length < 4) {
-                console.log('⚠️ Less than 4 keys found. Resetting to default...');
-                initializeDefaultKeys();
-                saveKeys();
-            }
-        } else {
-            console.log('📝 No keys file found. Creating default keys...');
-            initializeDefaultKeys();
-            saveKeys();
-        }
-    } catch (error) {
-        console.error('❌ Error loading keys:', error);
-        initializeDefaultKeys();
-        saveKeys();
+// 🔥 HAR KEY KI ALAG EXPIRY (YYYY-MM-DD format)
+const KEYS = {
+    "anurag1_device_001": {
+        expiry: "2026-09-30"   // 30 Sept 2026
+    },
+    "anurag2_device_002": {
+        expiry: "2026-10-15"   // 15 Oct 2026
+    },
+    "anurag3_device_003": {
+        expiry: "2026-08-20"   // 20 Aug 2026
+    },
+    "anurag4_device_004": {
+        expiry: "2026-12-31"   // 31 Dec 2026
+    },
+    "newuser_device_005": {
+        expiry: "2026-09-10"   // 10 Sept 2026
     }
-}
-
-function saveKeys() {
-    try {
-        fs.writeFileSync(KEYS_FILE, JSON.stringify(keysDB, null, 2));
-        console.log(`💾 Saved ${Object.keys(keysDB).length} keys to database`);
-    } catch (error) {
-        console.error('❌ Error saving keys:', error);
-    }
-}
-
-// ======================== INITIALIZE 4 KEYS ========================
-function initializeDefaultKeys() {
-    keysDB = {};
-    const users = [
-        'anurag1_device_001',
-        'anurag2_device_002',
-        'anurag3_device_003',
-        'anurag4_device_004'
-    ];
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
-
-    users.forEach(userKey => {
-        const deviceId = crypto.createHash('md5').update(userKey).digest('hex');
-        keysDB[deviceId] = {
-            user_key: userKey,
-            created_at: new Date().toISOString(),
-            expiry: expiryDate.toISOString(),
-            is_active: true
-        };
-    });
-
-    console.log(`✅ Initialized ${users.length} default keys`);
-}
+};
 
 // ======================== TOKEN GENERATION ========================
 function generateToken(user_key, serial) {
@@ -103,10 +60,8 @@ app.post('/connect/*', (req, res) => {
     console.log(`🔑 Received Key: ${user_key}`);
     console.log(`📱 Serial: ${serial || 'N/A'}`);
 
-    const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
-    const deviceRecord = keysDB[deviceId];
-
-    if (!deviceRecord || !deviceRecord.is_active) {
+    // 🔥 Check if key exists
+    if (!KEYS[user_key]) {
         console.log(`❌ Key not registered: ${user_key}`);
         return res.status(403).json({
             status: false,
@@ -114,10 +69,11 @@ app.post('/connect/*', (req, res) => {
         });
     }
 
+    // 🔥 Check expiry
+    const expiryDate = new Date(KEYS[user_key].expiry);
     const now = new Date();
-    const expiry = new Date(deviceRecord.expiry);
-    if (now > expiry) {
-        console.log(`⏰ Key expired: ${user_key}`);
+    if (now > expiryDate) {
+        console.log(`⏰ Key expired: ${user_key} (Expiry: ${KEYS[user_key].expiry})`);
         return res.status(403).json({
             status: false,
             reason: 'Key Expired'
@@ -130,6 +86,7 @@ app.post('/connect/*', (req, res) => {
 
     console.log(`✅ Login success: ${user_key}`);
     console.log(`🔑 Token: ${token}`);
+    console.log(`📅 Expires: ${KEYS[user_key].expiry}`);
 
     res.json({
         "status": true,
@@ -140,45 +97,7 @@ app.post('/connect/*', (req, res) => {
     });
 });
 
-// ======================== ADMIN APIs (SECURE - NO KEYS EXPOSED) ========================
-
-// 📌 Create New Key
-app.post('/admin/create-key', (req, res) => {
-    const { user_key, expiry_days = 30 } = req.body;
-
-    if (!user_key) {
-        return res.status(400).json({
-            success: false,
-            error: 'Missing user_key'
-        });
-    }
-
-    const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + expiry_days);
-
-    if (keysDB[deviceId]) {
-        return res.status(409).json({
-            success: false,
-            error: 'Key already exists!'
-        });
-    }
-
-    keysDB[deviceId] = {
-        user_key: user_key,
-        created_at: new Date().toISOString(),
-        expiry: expiryDate.toISOString(),
-        is_active: true
-    };
-    saveKeys();
-
-    console.log(`🔑 New key created: ${user_key}`);
-    res.json({
-        success: true,
-        message: `✅ Key created! Valid for ${expiry_days} days.`
-        // 🔥 No key returned
-    });
-});
+// ======================== ADMIN APIs ========================
 
 // 📌 Check Key Status (Public - Only true/false)
 app.get('/admin/check-key', (req, res) => {
@@ -188,91 +107,40 @@ app.get('/admin/check-key', (req, res) => {
         return res.status(400).json({ error: 'Missing user_key' });
     }
 
-    const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
-    const record = keysDB[deviceId];
-
-    if (!record || !record.is_active) {
-        return res.json({ valid: false });
+    if (!KEYS[user_key]) {
+        return res.json({ valid: false, reason: 'Key not found' });
     }
 
+    const expiryDate = new Date(KEYS[user_key].expiry);
     const now = new Date();
-    const expiry = new Date(record.expiry);
-    const isExpired = now > expiry;
+    const isExpired = now > expiryDate;
 
-    if (isExpired) {
-        return res.json({ valid: false });
-    }
-
-    res.json({ valid: true });
+    res.json({
+        valid: !isExpired,
+        expires_on: KEYS[user_key].expiry,
+        is_expired: isExpired
+    });
 });
 
 // 📌 List All Keys (ONLY COUNT - NO KEYS EXPOSED)
 app.get('/admin/list-keys', (req, res) => {
-    const total = Object.keys(keysDB).length;
-    const active = Object.values(keysDB).filter(k => k.is_active).length;
-    const expired = Object.values(keysDB).filter(k => {
-        return new Date(k.expiry) < new Date();
-    }).length;
+    const total = Object.keys(KEYS).length;
+    const now = new Date();
+    let active = 0;
+    let expired = 0;
+
+    Object.values(KEYS).forEach(key => {
+        if (new Date(key.expiry) > now) {
+            active++;
+        } else {
+            expired++;
+        }
+    });
 
     res.json({
         total: total,
         active: active,
         expired: expired
-        // 🔥 No keys, no user_key, no serial
-    });
-});
-
-// 📌 Extend Expiry
-app.post('/admin/extend-key', (req, res) => {
-    const { user_key, extra_days = 30 } = req.body;
-
-    if (!user_key) {
-        return res.status(400).json({ error: 'Missing user_key' });
-    }
-
-    const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
-
-    if (!keysDB[deviceId]) {
-        return res.status(404).json({ error: 'Key not found' });
-    }
-
-    const currentExpiry = new Date(keysDB[deviceId].expiry);
-    const newExpiry = new Date(currentExpiry);
-    newExpiry.setDate(newExpiry.getDate() + extra_days);
-
-    keysDB[deviceId].expiry = newExpiry.toISOString();
-    keysDB[deviceId].is_active = true;
-    saveKeys();
-
-    console.log(`⏰ Extended key for ${user_key} by ${extra_days} days`);
-    res.json({
-        success: true,
-        message: `✅ Key extended by ${extra_days} days`
-        // 🔥 No key returned
-    });
-});
-
-// 📌 Revoke Key
-app.post('/admin/revoke-key', (req, res) => {
-    const { user_key } = req.body;
-
-    if (!user_key) {
-        return res.status(400).json({ error: 'Missing user_key' });
-    }
-
-    const deviceId = crypto.createHash('md5').update(user_key).digest('hex');
-
-    if (!keysDB[deviceId]) {
-        return res.status(404).json({ error: 'Key not found' });
-    }
-
-    keysDB[deviceId].is_active = false;
-    saveKeys();
-
-    console.log(`🚫 Key revoked for ${user_key}`);
-    res.json({
-        success: true,
-        message: `🚫 Key revoked for ${user_key}`
     });
 });
 
@@ -280,19 +148,17 @@ app.post('/admin/revoke-key', (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         status: "🚀 Server is running!",
-        total_keys: Object.keys(keysDB).length
-        // 🔥 No keys exposed
+        total_keys: Object.keys(KEYS).length
     });
 });
 
 // ======================== START SERVER ========================
-loadKeys();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`\n✅ ===== REGISTERED KEYS (Hidden from public) =====`);
-    Object.values(keysDB).forEach(u => {
-        console.log(`   🔑 ${u.user_key}`);
+    console.log(`\n✅ ===== REGISTERED KEYS WITH EXPIRY =====`);
+    Object.keys(KEYS).forEach(k => {
+        console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry}`);
     });
-    console.log(`\n🔒 Secure Mode: Keys not exposed in any response`);
+    console.log(`\n🔒 Secure Mode: Keys not exposed in responses`);
 });
