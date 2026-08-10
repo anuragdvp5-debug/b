@@ -14,7 +14,7 @@ const supabase = createClient(
 const BINDINGS_FILE = './bindings.json';
 let bindings = {};
 
-function loadBindings() {
+async function loadBindings() {
     try {
         if (fs.existsSync(BINDINGS_FILE)) {
             const data = fs.readFileSync(BINDINGS_FILE, 'utf8');
@@ -22,11 +22,11 @@ function loadBindings() {
             console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from bindings.json`);
         } else {
             console.log('📝 No bindings.json found. Loading from Supabase...');
-            loadFromSupabase();
+            await loadFromSupabase();
         }
     } catch (error) {
         console.error('❌ Error loading bindings:', error);
-        bindings = {};
+        await loadFromSupabase();
     }
 }
 
@@ -41,11 +41,15 @@ async function loadFromSupabase() {
             return;
         }
 
-        data.forEach(row => {
-            bindings[row.user_key] = row.device_id;
-        });
-        console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from Supabase`);
-        saveBindings(); // bindings.json mein bhi save kar do
+        if (data && data.length > 0) {
+            data.forEach(row => {
+                bindings[row.user_key] = row.device_id;
+            });
+            console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from Supabase`);
+            saveBindings(); // bindings.json mein bhi save kar do
+        } else {
+            console.log('📝 No bindings found in Supabase');
+        }
     } catch (err) {
         console.error('❌ Supabase connection failed:', err);
     }
@@ -79,7 +83,6 @@ async function saveToSupabase(user_key, device_id) {
 // ==================== KEYS ====================
 const KEYS = {
     "anurag1b": { expiry: "2026-08-30" },
-    
     "sachin": { expiry: "2026-08-12" },
     "newuser_device_005": { expiry: "2026-09-10" }
 };
@@ -214,7 +217,6 @@ app.post('/admin/reset-device', async (req, res) => {
     delete bindings[user_key];
     saveBindings();
     
-    // Supabase se bhi delete karo
     try {
         await supabase.from('bindings').delete().eq('user_key', user_key);
         console.log(`🗑️ Deleted from Supabase: ${user_key}`);
@@ -234,27 +236,6 @@ app.get('/', (req, res) => {
     });
 });
 
-// ==================== START ====================
-loadBindings();
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`\n🚀 Server running on port ${PORT}`);
-    console.log(`\n✅ ===== REGISTERED KEYS =====`);
-    Object.keys(KEYS).forEach(k => {
-        const bound = bindings[k] ? `🔒 Bound to: ${bindings[k]}` : '🔓 Not bound yet';
-        console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry} | ${bound}`);
-    });
-    console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (bindings.json + Supabase)`);
-});
-
-
-
-
-
-
-
-
-
 // ==================== SECOND APK CONTROL ====================
 
 // 1️⃣ LOGIN ENDPOINT - /api/login (POST)
@@ -272,7 +253,6 @@ app.post('/api/login', async (req, res) => {
 
     console.log(`🔑 Key: ${key}`);
 
-    // 🔥 Check if key exists
     if (!KEYS[key]) {
         console.log(`❌ Key not registered: ${key}`);
         return res.status(401).json({
@@ -281,7 +261,6 @@ app.post('/api/login', async (req, res) => {
         });
     }
 
-    // 🔥 Check expiry
     const expiryDate = new Date(KEYS[key].expiry);
     const now = new Date();
     if (now > expiryDate) {
@@ -292,7 +271,6 @@ app.post('/api/login', async (req, res) => {
         });
     }
 
-    // ✅ Key is valid
     console.log(`✅ [SECOND APK] Login success: ${key}`);
     res.json({
         success: true,
@@ -317,7 +295,6 @@ app.post('/api/activate', async (req, res) => {
     console.log(`👤 Username: ${username}`);
     console.log(`📱 Device: ${device}`);
 
-    // 🔥 Check if key exists
     if (!KEYS[key]) {
         console.log(`❌ Key not registered: ${key}`);
         return res.status(401).json({
@@ -326,7 +303,6 @@ app.post('/api/activate', async (req, res) => {
         });
     }
 
-    // 🔥 Check expiry
     const expiryDate = new Date(KEYS[key].expiry);
     const now = new Date();
     if (now > expiryDate) {
@@ -337,7 +313,6 @@ app.post('/api/activate', async (req, res) => {
         });
     }
 
-    // ✅ Key is valid - Activate
     console.log(`✅ [SECOND APK] Activate success: ${key} → ${username}`);
     res.json({
         success: true,
@@ -358,7 +333,6 @@ app.get('/api/check', async (req, res) => {
         });
     }
 
-    // 🔥 Check if key exists
     if (!KEYS[key]) {
         console.log(`❌ Key not registered: ${key}`);
         return res.json({
@@ -367,7 +341,6 @@ app.get('/api/check', async (req, res) => {
         });
     }
 
-    // 🔥 Check expiry
     const expiryDate = new Date(KEYS[key].expiry);
     const now = new Date();
     if (now > expiryDate) {
@@ -378,10 +351,24 @@ app.get('/api/check', async (req, res) => {
         });
     }
 
-    // ✅ Key is valid
     console.log(`✅ [SECOND APK] Check success: ${key}`);
     res.json({
         valid: true,
         message: 'Key is valid'
     });
 });
+
+// ==================== START ====================
+(async () => {
+    await loadBindings();
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`\n🚀 Server running on port ${PORT}`);
+        console.log(`\n✅ ===== REGISTERED KEYS =====`);
+        Object.keys(KEYS).forEach(k => {
+            const bound = bindings[k] ? `🔒 Bound to: ${bindings[k]}` : '🔓 Not bound yet';
+            console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry} | ${bound}`);
+        });
+        console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (bindings.json + Supabase)`);
+    });
+})();
