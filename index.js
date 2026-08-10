@@ -256,11 +256,11 @@ app.listen(PORT, () => {
 
 
 
-
 // ==================== SECOND APK CONTROL ====================
-// Endpoint for second app login (only key, no device binding)
+
+// 1️⃣ LOGIN ENDPOINT - /api/login (POST)
 app.post('/api/login', async (req, res) => {
-    console.log(`\n📥 API Login attempt:`, req.body);
+    console.log(`\n📥 [SECOND APK] Login attempt:`, req.body);
 
     const { key } = req.body;
 
@@ -271,9 +271,9 @@ app.post('/api/login', async (req, res) => {
         });
     }
 
-    console.log(`🔑 Received Key: ${key}`);
+    console.log(`🔑 Key: ${key}`);
 
-    // 🔥 Check if key exists in KEYS
+    // 🔥 Check if key exists
     if (!KEYS[key]) {
         console.log(`❌ Key not registered: ${key}`);
         return res.status(401).json({
@@ -294,9 +294,95 @@ app.post('/api/login', async (req, res) => {
     }
 
     // ✅ Key is valid
-    console.log(`✅ API Login success: ${key}`);
+    console.log(`✅ [SECOND APK] Login success: ${key}`);
     res.json({
         success: true,
         message: 'Login successful'
+    });
+});
+
+// 2️⃣ ACTIVATE ENDPOINT - /api/activate (POST)
+app.post('/api/activate', async (req, res) => {
+    console.log(`\n📥 [SECOND APK] Activate attempt:`, req.body);
+
+    const { key, username, device } = req.body;
+
+    if (!key || !username || !device) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing fields (key, username, device required)'
+        });
+    }
+
+    console.log(`🔑 Key: ${key}`);
+    console.log(`👤 Username: ${username}`);
+    console.log(`📱 Device: ${device}`);
+
+    // 🔥 Check if key exists
+    if (!KEYS[key]) {
+        console.log(`❌ Key not registered: ${key}`);
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid key'
+        });
+    }
+
+    // 🔥 Check expiry
+    const expiryDate = new Date(KEYS[key].expiry);
+    const now = new Date();
+    if (now > expiryDate) {
+        console.log(`⏰ Key expired: ${key}`);
+        return res.status(401).json({
+            success: false,
+            message: 'Key expired'
+        });
+    }
+
+    // ✅ Key is valid - Activate
+    console.log(`✅ [SECOND APK] Activate success: ${key} → ${username}`);
+    res.json({
+        success: true,
+        message: 'Key activated successfully'
+    });
+});
+
+// 3️⃣ CHECK ENDPOINT - /api/check (GET)
+app.get('/api/check', async (req, res) => {
+    const { key } = req.query;
+
+    console.log(`\n📥 [SECOND APK] Check attempt: key=${key}`);
+
+    if (!key) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing key'
+        });
+    }
+
+    // 🔥 Check if key exists
+    if (!KEYS[key]) {
+        console.log(`❌ Key not registered: ${key}`);
+        return res.json({
+            valid: false,
+            message: 'Invalid key'
+        });
+    }
+
+    // 🔥 Check expiry
+    const expiryDate = new Date(KEYS[key].expiry);
+    const now = new Date();
+    if (now > expiryDate) {
+        console.log(`⏰ Key expired: ${key}`);
+        return res.json({
+            valid: false,
+            message: 'Key expired'
+        });
+    }
+
+    // ✅ Key is valid
+    console.log(`✅ [SECOND APK] Check success: ${key}`);
+    res.json({
+        valid: true,
+        message: 'Key is valid'
     });
 });
