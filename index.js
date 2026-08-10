@@ -13,45 +13,35 @@ const supabase = createClient(
 // ==================== BINDINGS ====================
 const BINDINGS_FILE = './bindings.json';
 let bindings = {};
-
-async function loadBindings() {
-    try {
-        if (fs.existsSync(BINDINGS_FILE)) {
-            const data = fs.readFileSync(BINDINGS_FILE, 'utf8');
-            bindings = JSON.parse(data);
-            console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from bindings.json`);
-        } else {
-            console.log('📝 No bindings.json found. Loading from Supabase...');
-            await loadFromSupabase();
-        }
-    } catch (error) {
-        console.error('❌ Error loading bindings:', error);
-        await loadFromSupabase();
-    }
-}
+let bindingsLoaded = false;  // 🔥 Track if bindings are loaded
 
 async function loadFromSupabase() {
     try {
+        console.log('🔄 Loading bindings from Supabase...');
         const { data, error } = await supabase
             .from('bindings')
             .select('user_key, device_id');
 
         if (error) {
             console.error('❌ Supabase load error:', error);
-            return;
+            return false;
         }
 
+        bindings = {};
         if (data && data.length > 0) {
             data.forEach(row => {
                 bindings[row.user_key] = row.device_id;
             });
             console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from Supabase`);
-            saveBindings(); // bindings.json mein bhi save kar do
+            saveBindings();
         } else {
             console.log('📝 No bindings found in Supabase');
         }
+        bindingsLoaded = true;
+        return true;
     } catch (err) {
         console.error('❌ Supabase connection failed:', err);
+        return false;
     }
 }
 
@@ -92,6 +82,16 @@ const KEYS = {
 // ==================== MIDDLEWARE ====================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 🔥 HAR REQUEST SE PEHLE BINDINGS CHECK KARO
+app.use(async (req, res, next) => {
+    // Agar bindings load nahi hui ya empty hai toh Supabase se load karo
+    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
+        console.log('🔄 Bindings not loaded or empty, loading from Supabase...');
+        await loadFromSupabase();
+    }
+    next();
+});
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -143,7 +143,11 @@ app.post('/connect/*', async (req, res) => {
         });
     }
 
-    // ==================== 🔥 1 KEY = 1 DEVICE CHECK ====================
+    // 🔥 1 KEY = 1 DEVICE CHECK - Bindings ko ensure karo
+    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
+        await loadFromSupabase();
+    }
+
     if (!bindings[user_key]) {
         // Pehli baar login - Device bind karo
         bindings[user_key] = serial;
@@ -176,7 +180,7 @@ app.post('/connect/*', async (req, res) => {
 });
 
 // ==================== ADMIN ====================
-app.get('/admin/check-key', (req, res) => {
+app.get('/admin/check-key', async (req, res) => {
     const { user_key } = req.query;
     if (!user_key) {
         return res.status(400).json({ error: 'Missing user_key' });
@@ -187,6 +191,12 @@ app.get('/admin/check-key', (req, res) => {
     const expiryDate = new Date(KEYS[user_key].expiry);
     const now = new Date();
     const isExpired = now > expiryDate;
+    
+    // 🔥 Bindings ensure karo
+    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
+        await loadFromSupabase();
+    }
+    
     res.json({
         valid: !isExpired,
         expires_on: KEYS[user_key].expiry,
@@ -196,7 +206,12 @@ app.get('/admin/check-key', (req, res) => {
     });
 });
 
-app.get('/admin/list-keys', (req, res) => {
+app.get('/admin/list-keys', async (req, res) => {
+    // 🔥 Bindings ensure karo
+    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
+        await loadFromSupabase();
+    }
+    
     const total = Object.keys(KEYS).length;
     const now = new Date();
     let active = 0, expired = 0, bound = 0;
@@ -238,19 +253,18 @@ app.get('/', (req, res) => {
     });
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// ==================== START ====================
+(async () => {
+    // 🔥 Server start pe bindings load karo
+    await loadFromSupabase();
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`\n🚀 Server running on port ${PORT}`);
+        console.log(`\n✅ ===== REGISTERED KEYS =====`);
+        Object.keys(KEYS).forEach(k => {
+            const bound = bindings[k] ? `🔒 Bound to: ${bindings[k]}` : '🔓 Not bound yet';
+            console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry} | ${bound}`);
+        });
+        console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (bindings.json + Supabase)`);
+    });
+})();
