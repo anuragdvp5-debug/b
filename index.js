@@ -257,7 +257,7 @@ app.listen(PORT, () => {
 
 
 
-const express = require('express');
+const express = require('express');  // ✅ Sirf ek baar
 const app = express();
 const crypto = require('crypto');
 const fs = require('fs');
@@ -548,16 +548,3 @@ app.listen(PORT, () => {
     });
     console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
