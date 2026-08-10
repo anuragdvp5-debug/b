@@ -2,6 +2,13 @@ const express = require('express');
 const app = express();
 const crypto = require('crypto');
 const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
+
+// ==================== SUPABASE ====================
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+);
 
 // ==================== BINDINGS ====================
 const BINDINGS_FILE = './bindings.json';
@@ -12,10 +19,10 @@ function loadBindings() {
         if (fs.existsSync(BINDINGS_FILE)) {
             const data = fs.readFileSync(BINDINGS_FILE, 'utf8');
             bindings = JSON.parse(data);
-            console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings`);
+            console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from bindings.json`);
         } else {
-            console.log('📝 No bindings file found. Creating new...');
-            saveBindings();
+            console.log('📝 No bindings.json found. Loading from Supabase...');
+            loadFromSupabase();
         }
     } catch (error) {
         console.error('❌ Error loading bindings:', error);
@@ -23,12 +30,49 @@ function loadBindings() {
     }
 }
 
+async function loadFromSupabase() {
+    try {
+        const { data, error } = await supabase
+            .from('bindings')
+            .select('user_key, device_id');
+
+        if (error) {
+            console.error('❌ Supabase load error:', error);
+            return;
+        }
+
+        data.forEach(row => {
+            bindings[row.user_key] = row.device_id;
+        });
+        console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from Supabase`);
+        saveBindings(); // bindings.json mein bhi save kar do
+    } catch (err) {
+        console.error('❌ Supabase connection failed:', err);
+    }
+}
+
 function saveBindings() {
     try {
         fs.writeFileSync(BINDINGS_FILE, JSON.stringify(bindings, null, 2));
-        console.log(`💾 Saved ${Object.keys(bindings).length} device bindings`);
+        console.log(`💾 Saved ${Object.keys(bindings).length} device bindings to bindings.json`);
     } catch (error) {
         console.error('❌ Error saving bindings:', error);
+    }
+}
+
+async function saveToSupabase(user_key, device_id) {
+    try {
+        const { error } = await supabase
+            .from('bindings')
+            .upsert({ user_key, device_id }, { onConflict: 'user_key' });
+
+        if (error) {
+            console.error('❌ Supabase insert error:', error);
+        } else {
+            console.log(`✅ Synced to Supabase: ${user_key} → ${device_id}`);
+        }
+    } catch (err) {
+        console.error('❌ Supabase insert failed:', err);
     }
 }
 
@@ -62,7 +106,7 @@ function generateRng() {
 }
 
 // ==================== LOGIN ====================
-app.post('/connect/*', (req, res) => {
+app.post('/connect/*', async (req, res) => {
     console.log(`\n📥 Login attempt:`, req.body);
 
     const { user_key, serial } = req.body;
@@ -100,9 +144,9 @@ app.post('/connect/*', (req, res) => {
         // Pehli baar login - Device bind karo
         bindings[user_key] = serial;
         saveBindings();
+        await saveToSupabase(user_key, serial);
         console.log(`🔗 Device bound: ${user_key} → ${serial}`);
     } else if (bindings[user_key] !== serial) {
-        // Different device trying to use same key
         console.log(`❌ Device mismatch! ${user_key} is bound to ${bindings[user_key]}, but trying from ${serial}`);
         return res.status(403).json({
             status: false,
@@ -160,7 +204,7 @@ app.get('/admin/list-keys', (req, res) => {
     res.json({ total, active, expired, device_bound: bound });
 });
 
-app.post('/admin/reset-device', (req, res) => {
+app.post('/admin/reset-device', async (req, res) => {
     const { user_key } = req.body;
     if (!user_key) {
         return res.status(400).json({ error: 'Missing user_key' });
@@ -170,6 +214,15 @@ app.post('/admin/reset-device', (req, res) => {
     }
     delete bindings[user_key];
     saveBindings();
+    
+    // Supabase se bhi delete karo
+    try {
+        await supabase.from('bindings').delete().eq('user_key', user_key);
+        console.log(`🗑️ Deleted from Supabase: ${user_key}`);
+    } catch (err) {
+        console.error('❌ Supabase delete error:', err);
+    }
+    
     console.log(`🔄 Device binding reset for: ${user_key}`);
     res.json({ success: true, message: `Device binding reset for ${user_key}` });
 });
@@ -192,5 +245,5 @@ app.listen(PORT, () => {
         const bound = bindings[k] ? `🔒 Bound to: ${bindings[k]}` : '🔓 Not bound yet';
         console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry} | ${bound}`);
     });
-    console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (Persistent with bindings.json)`);
+    console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (bindings.json + Supabase)`);
 });
