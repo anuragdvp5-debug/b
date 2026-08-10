@@ -13,35 +13,33 @@ const supabase = createClient(
 // ==================== BINDINGS ====================
 const BINDINGS_FILE = './bindings.json';
 let bindings = {};
-let bindingsLoaded = false;  // 🔥 Track if bindings are loaded
 
-async function loadFromSupabase() {
+// 🔥 HAR BAAR SUPABASE SE DIRECT LOAD (CACHE NAHI)
+async function getBindingsFromSupabase() {
     try {
-        console.log('🔄 Loading bindings from Supabase...');
+        console.log('🔄 Fetching fresh bindings from Supabase...');
         const { data, error } = await supabase
             .from('bindings')
             .select('user_key, device_id');
 
         if (error) {
             console.error('❌ Supabase load error:', error);
-            return false;
+            return {};
         }
 
-        bindings = {};
+        const freshBindings = {};
         if (data && data.length > 0) {
             data.forEach(row => {
-                bindings[row.user_key] = row.device_id;
+                freshBindings[row.user_key] = row.device_id;
             });
-            console.log(`✅ Loaded ${Object.keys(bindings).length} device bindings from Supabase`);
-            saveBindings();
+            console.log(`✅ Loaded ${Object.keys(freshBindings).length} device bindings from Supabase`);
         } else {
             console.log('📝 No bindings found in Supabase');
         }
-        bindingsLoaded = true;
-        return true;
+        return freshBindings;
     } catch (err) {
         console.error('❌ Supabase connection failed:', err);
-        return false;
+        return {};
     }
 }
 
@@ -82,16 +80,6 @@ const KEYS = {
 // ==================== MIDDLEWARE ====================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// 🔥 HAR REQUEST SE PEHLE BINDINGS CHECK KARO
-app.use(async (req, res, next) => {
-    // Agar bindings load nahi hui ya empty hai toh Supabase se load karo
-    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
-        console.log('🔄 Bindings not loaded or empty, loading from Supabase...');
-        await loadFromSupabase();
-    }
-    next();
-});
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -143,23 +131,26 @@ app.post('/connect/*', async (req, res) => {
         });
     }
 
-    // 🔥 1 KEY = 1 DEVICE CHECK - Bindings ko ensure karo
-    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
-        await loadFromSupabase();
-    }
+    // 🔥 HAR BAAR SUPABASE SE DIRECT CHECK (CACHE IGNORE)
+    const freshBindings = await getBindingsFromSupabase();
+    const deviceId = freshBindings[user_key];
 
-    if (!bindings[user_key]) {
+    if (!deviceId) {
         // Pehli baar login - Device bind karo
         bindings[user_key] = serial;
         saveBindings();
         await saveToSupabase(user_key, serial);
         console.log(`🔗 Device bound: ${user_key} → ${serial}`);
-    } else if (bindings[user_key] !== serial) {
-        console.log(`❌ Device mismatch! ${user_key} is bound to ${bindings[user_key]}, but trying from ${serial}`);
+    } else if (deviceId !== serial) {
+        console.log(`❌ Device mismatch! ${user_key} is bound to ${deviceId}, but trying from ${serial}`);
         return res.status(403).json({
             status: false,
             reason: 'This key is already used on another device!'
         });
+    } else {
+        // Bindings update karo (cache refresh)
+        bindings[user_key] = serial;
+        saveBindings();
     }
 
     const token = generateToken(user_key, serial);
@@ -168,7 +159,7 @@ app.post('/connect/*', async (req, res) => {
     console.log(`✅ Login success: ${user_key}`);
     console.log(`🔑 Token: ${token}`);
     console.log(`📅 Expires: ${KEYS[user_key].expiry}`);
-    console.log(`📱 Bound Device: ${bindings[user_key]}`);
+    console.log(`📱 Bound Device: ${serial}`);
 
     res.json({
         "status": true,
@@ -191,34 +182,29 @@ app.get('/admin/check-key', async (req, res) => {
     const expiryDate = new Date(KEYS[user_key].expiry);
     const now = new Date();
     const isExpired = now > expiryDate;
-    
-    // 🔥 Bindings ensure karo
-    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
-        await loadFromSupabase();
-    }
-    
+
+    // 🔥 DIRECT SUPABASE CHECK
+    const freshBindings = await getBindingsFromSupabase();
+    const deviceId = freshBindings[user_key];
+
     res.json({
         valid: !isExpired,
         expires_on: KEYS[user_key].expiry,
         is_expired: isExpired,
-        device_bound: bindings[user_key] ? true : false,
-        device_id: bindings[user_key] || 'Not bound yet'
+        device_bound: deviceId ? true : false,
+        device_id: deviceId || 'Not bound yet'
     });
 });
 
 app.get('/admin/list-keys', async (req, res) => {
-    // 🔥 Bindings ensure karo
-    if (!bindingsLoaded || Object.keys(bindings).length === 0) {
-        await loadFromSupabase();
-    }
-    
+    const freshBindings = await getBindingsFromSupabase();
     const total = Object.keys(KEYS).length;
     const now = new Date();
     let active = 0, expired = 0, bound = 0;
     Object.keys(KEYS).forEach(key => {
         if (new Date(KEYS[key].expiry) > now) active++;
         else expired++;
-        if (bindings[key]) bound++;
+        if (freshBindings[key]) bound++;
     });
     res.json({ total, active, expired, device_bound: bound });
 });
@@ -231,12 +217,14 @@ app.post('/admin/reset-device', async (req, res) => {
     if (!KEYS[user_key]) {
         return res.status(404).json({ error: 'Key not found' });
     }
-    delete bindings[user_key];
-    saveBindings();
     
     try {
         await supabase.from('bindings').delete().eq('user_key', user_key);
         console.log(`🗑️ Deleted from Supabase: ${user_key}`);
+        
+        // Local bindings bhi update karo
+        delete bindings[user_key];
+        saveBindings();
     } catch (err) {
         console.error('❌ Supabase delete error:', err);
     }
@@ -255,8 +243,8 @@ app.get('/', (req, res) => {
 
 // ==================== START ====================
 (async () => {
-    // 🔥 Server start pe bindings load karo
-    await loadFromSupabase();
+    // 🔥 Server start pe bindings load karo (cache warmup)
+    bindings = await getBindingsFromSupabase();
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
         console.log(`\n🚀 Server running on port ${PORT}`);
@@ -265,6 +253,6 @@ app.get('/', (req, res) => {
             const bound = bindings[k] ? `🔒 Bound to: ${bindings[k]}` : '🔓 Not bound yet';
             console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry} | ${bound}`);
         });
-        console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (bindings.json + Supabase)`);
+        console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (Direct Supabase Check)`);
     });
 })();
