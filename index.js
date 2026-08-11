@@ -258,3 +258,81 @@ app.get('/', (req, res) => {
         console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (Direct Supabase Check)`);
     });
 })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ==================== SECOND APK CONTROL ====================
+
+// 1️⃣ LOGIN ENDPOINT - /connect (POST)
+app.post('/connect', async (req, res) => {
+    console.log(`\n📥 [SECOND APK] Connect attempt:`, req.body);
+
+    const { game, user_key, serial } = req.body;
+
+    if (!user_key || !serial) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing user_key or serial'
+        });
+    }
+
+    console.log(`🎮 Game: ${game}`);
+    console.log(`🔑 User Key: ${user_key}`);
+    console.log(`📱 Serial: ${serial}`);
+
+    // 🔥 Check if key exists
+    if (!KEYS[user_key]) {
+        console.log(`❌ Key not registered: ${user_key}`);
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid key'
+        });
+    }
+
+    // 🔥 Check expiry
+    const expiryDate = new Date(KEYS[user_key].expiry);
+    const now = new Date();
+    if (now > expiryDate) {
+        console.log(`⏰ Key expired: ${user_key}`);
+        return res.status(401).json({
+            success: false,
+            message: 'Key expired'
+        });
+    }
+
+    console.log(`✅ [SECOND APK] Connect success: ${user_key}`);
+    res.json({
+        success: true,
+        message: 'Login successful'
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
