@@ -74,7 +74,7 @@ const KEYS = {
     "akash": { expiry: "2026-08-15" },
     "anurag": { expiry: "2026-08-23" },
     "suraj": { expiry: "2026-08-15" },
-    
+    "vivek": { expiry: "2026-08-15" },
     "newuser_device_005": { expiry: "2026-09-10" }
 };
 
