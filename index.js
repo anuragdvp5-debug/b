@@ -71,10 +71,10 @@ async function saveToSupabase(user_key, device_id) {
 // ==================== KEYS ====================
 const KEYS = {
     
-    "akash": { expiry: "2026-08-15" },
+    "akash": { expiry: "2026-08-17" },
     "anurag": { expiry: "2026-08-23" },
-    "suraj": { expiry: "2026-08-15" },
-    "vivek": { expiry: "2026-08-15" },
+    "suraj": { expiry: "2026-08-17" },
+    "vivek": { expiry: "2026-08-17" },
     "newuser_device_005": { expiry: "2026-09-10" }
 };
 
