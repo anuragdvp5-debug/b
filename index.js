@@ -263,29 +263,26 @@ app.get('/', (req, res) => {
 
 
 
+// ==================== DARK GHOST APK CONTROL ====================
+// Endpoint: /login (POST)
+app.post('/login', async (req, res) => {
+    console.log(`\n📥 [DARK GHOST] Login attempt:`, req.body);
 
-// ==================== SECOND APK CONTROL ====================
+    const { key, hwid } = req.body;
 
-// Endpoint: /connect (POST)
-app.post('/connect', async (req, res) => {
-    console.log(`\n📥 [SECOND APK] Connect attempt:`, req.body);
-
-    const { game, user_key, serial } = req.body;
-
-    if (!user_key || !serial) {
+    if (!key) {
         return res.status(400).json({
             success: false,
-            message: 'Missing user_key or serial'
+            message: 'Missing key'
         });
     }
 
-    console.log(`🎮 Game: ${game}`);
-    console.log(`🔑 User Key: ${user_key}`);
-    console.log(`📱 Serial: ${serial}`);
+    console.log(`🔑 Key: ${key}`);
+    console.log(`📱 HWID: ${hwid || 'N/A'}`);
 
     // 🔥 Check if key exists
-    if (!KEYS[user_key]) {
-        console.log(`❌ Key not registered: ${user_key}`);
+    if (!KEYS[key]) {
+        console.log(`❌ Key not registered: ${key}`);
         return res.status(401).json({
             success: false,
             message: 'Invalid key'
@@ -293,27 +290,22 @@ app.post('/connect', async (req, res) => {
     }
 
     // 🔥 Check expiry
-    const expiryDate = new Date(KEYS[user_key].expiry);
+    const expiryDate = new Date(KEYS[key].expiry);
     const now = new Date();
     if (now > expiryDate) {
-        console.log(`⏰ Key expired: ${user_key}`);
+        console.log(`⏰ Key expired: ${key}`);
         return res.status(401).json({
             success: false,
             message: 'Key expired'
         });
     }
 
-    console.log(`✅ [SECOND APK] Connect success: ${user_key}`);
+    console.log(`✅ [DARK GHOST] Login success: ${key}`);
     res.json({
         success: true,
         message: 'Login successful'
     });
 });
-
-
-
-
-
 
 
 
