@@ -313,6 +313,54 @@ app.post('/login', async (req, res) => {
 
 
 
+// ==================== THIRD APK CONTROL ====================
+// Endpoint: /connect/hacker002 (POST)
+app.post('/connect/hacker002', async (req, res) => {
+    console.log(`\n📥 [THIRD APK] Login attempt:`, req.body);
+
+    const { key } = req.body;
+
+    if (!key) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing key'
+        });
+    }
+
+    console.log(`🔑 Key: ${key}`);
+
+    // 🔥 Check if key exists
+    if (!KEYS[key]) {
+        console.log(`❌ Key not registered: ${key}`);
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid key'
+        });
+    }
+
+    // 🔥 Check expiry
+    const expiryDate = new Date(KEYS[key].expiry);
+    const now = new Date();
+    if (now > expiryDate) {
+        console.log(`⏰ Key expired: ${key}`);
+        return res.status(401).json({
+            success: false,
+            message: 'Key expired'
+        });
+    }
+
+    console.log(`✅ [THIRD APK] Login success: ${key}`);
+    res.json({
+        success: true,
+        message: 'Login successful'
+    });
+});
+
+
+
+
+
+
 
 
 
