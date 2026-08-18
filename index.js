@@ -5,8 +5,6 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 
-
-
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -14,14 +12,6 @@ app.use(cors({
     preflightContinue: false,
     optionsSuccessStatus: 204
 }));
-
-
-
-
-
-
-
-
 
 // ==================== SUPABASE ====================
 const supabase = createClient(
@@ -33,7 +23,6 @@ const supabase = createClient(
 const BINDINGS_FILE = './bindings.json';
 let bindings = {};
 
-// 🔥 HAR BAAR SUPABASE SE DIRECT LOAD (CACHE NAHI)
 async function getBindingsFromSupabase() {
     try {
         console.log('🔄 Fetching fresh bindings from Supabase...');
@@ -89,9 +78,7 @@ async function saveToSupabase(user_key, device_id) {
 
 // ==================== KEYS ====================
 const KEYS = {
-    
     "akash": { expiry: "2026-08-19" },
-    
     "suraj": { expiry: "2026-08-19" },
     "vivek": { expiry: "2026-08-19" },
     "anurag1": { expiry: "2026-08-23" },
@@ -152,12 +139,10 @@ app.post('/connect/*', async (req, res) => {
         });
     }
 
-    // 🔥 HAR BAAR SUPABASE SE DIRECT CHECK (CACHE IGNORE)
     const freshBindings = await getBindingsFromSupabase();
     const deviceId = freshBindings[user_key];
 
     if (!deviceId) {
-        // Pehli baar login - Device bind karo
         bindings[user_key] = serial;
         saveBindings();
         await saveToSupabase(user_key, serial);
@@ -169,7 +154,6 @@ app.post('/connect/*', async (req, res) => {
             reason: 'This key is already used on another device!'
         });
     } else {
-        // Bindings update karo (cache refresh)
         bindings[user_key] = serial;
         saveBindings();
     }
@@ -204,7 +188,6 @@ app.get('/admin/check-key', async (req, res) => {
     const now = new Date();
     const isExpired = now > expiryDate;
 
-    // 🔥 DIRECT SUPABASE CHECK
     const freshBindings = await getBindingsFromSupabase();
     const deviceId = freshBindings[user_key];
 
@@ -242,8 +225,6 @@ app.post('/admin/reset-device', async (req, res) => {
     try {
         await supabase.from('bindings').delete().eq('user_key', user_key);
         console.log(`🗑️ Deleted from Supabase: ${user_key}`);
-        
-        // Local bindings bhi update karo
         delete bindings[user_key];
         saveBindings();
     } catch (err) {
@@ -264,7 +245,6 @@ app.get('/', (req, res) => {
 
 // ==================== START ====================
 (async () => {
-    // 🔥 Server start pe bindings load karo (cache warmup)
     bindings = await getBindingsFromSupabase();
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
@@ -278,13 +258,7 @@ app.get('/', (req, res) => {
     });
 })();
 
-
-
-
-
-
 // ==================== DARK GHOST APK CONTROL ====================
-// Endpoint: /login (POST)
 app.post('/login', async (req, res) => {
     console.log(`\n📥 [DARK GHOST] Login attempt:`, req.body);
 
@@ -300,7 +274,6 @@ app.post('/login', async (req, res) => {
     console.log(`🔑 Key: ${key}`);
     console.log(`📱 HWID: ${hwid || 'N/A'}`);
 
-    // 🔥 Check if key exists
     if (!KEYS[key]) {
         console.log(`❌ Key not registered: ${key}`);
         return res.status(401).json({
@@ -309,7 +282,6 @@ app.post('/login', async (req, res) => {
         });
     }
 
-    // 🔥 Check expiry
     const expiryDate = new Date(KEYS[key].expiry);
     const now = new Date();
     if (now > expiryDate) {
@@ -327,14 +299,7 @@ app.post('/login', async (req, res) => {
     });
 });
 
-
-
-
-
-
-
 // ==================== THIRD APK CONTROL ====================
-// Endpoint: /connect/hacker002 (POST)
 app.post('/connect/hacker002', async (req, res) => {
     console.log(`\n📥 [THIRD APK] Login attempt:`, req.body);
 
@@ -349,7 +314,6 @@ app.post('/connect/hacker002', async (req, res) => {
 
     console.log(`🔑 Key: ${key}`);
 
-    // 🔥 Check if key exists
     if (!KEYS[key]) {
         console.log(`❌ Key not registered: ${key}`);
         return res.status(401).json({
@@ -358,7 +322,6 @@ app.post('/connect/hacker002', async (req, res) => {
         });
     }
 
-    // 🔥 Check expiry
     const expiryDate = new Date(KEYS[key].expiry);
     const now = new Date();
     if (now > expiryDate) {
@@ -376,21 +339,7 @@ app.post('/connect/hacker002', async (req, res) => {
     });
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// ==================== 4TH APK CONTROL ====================
 app.post('/api/verify', (req, res) => {
     const { key, device, label, nonce } = req.body;
     console.log('📥 [4th APK] Verify attempt:', { key, device, label, nonce });
@@ -399,7 +348,6 @@ app.post('/api/verify', (req, res) => {
         return res.json({ success: false, message: 'Missing key' });
     }
 
-    // 🔥 EXISTING SYSTEM SE CHECK
     if (!KEYS[key]) {
         console.log(`❌ Key not found: ${key}`);
         return res.json({ success: false, message: 'Invalid key' });
@@ -416,38 +364,25 @@ app.post('/api/verify', (req, res) => {
     res.json({ success: true, message: 'Login successful' });
 });
 
-
-
-
-
-
-
-
-
-
-
-
 // ============================================
-// 🔐 RESELLER / ADMIN LOGIN (Auto-Create)
+// 🔐 RESELLER / ADMIN LOGIN (Auto-Create + Expiry + Device Bind)
 // ============================================
 app.post('/reseller/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, device_id } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ success: false, message: 'Missing credentials' });
+    if (!username || !password || !device_id) {
+        return res.status(400).json({ success: false, message: 'Missing credentials or device ID' });
     }
 
     try {
-        // 🔥 1. Check if reseller exists
         let { data, error } = await supabase
             .from('resellers')
             .select('*')
             .eq('username', username)
             .single();
 
-        // 🔥 2. Agar nahi hai toh auto-create karo
+        // 🔥 Auto-create (sirf reseller)
         if (error || !data) {
-            // Admin username ko auto-create mat karo
             if (username === 'admin') {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
             }
@@ -461,6 +396,8 @@ app.post('/reseller/login', async (req, res) => {
                     password: password,
                     role: 'reseller',
                     is_active: true,
+                    expiry: null,
+                    device_id: device_id,
                     created_at: new Date()
                 })
                 .select()
@@ -472,22 +409,56 @@ app.post('/reseller/login', async (req, res) => {
             }
 
             data = newData;
-            console.log(`✅ Reseller "${username}" auto-created!`);
+            console.log(`✅ Reseller "${username}" auto-created & device bound!`);
         }
 
-        // 🔥 3. Password check
+        // 🔥 Check active
+        if (!data.is_active) {
+            return res.status(403).json({ success: false, message: 'Account deactivated' });
+        }
+
+        // 🔥 Check expiry
+        if (data.expiry) {
+            const expiryDate = new Date(data.expiry);
+            const now = new Date();
+            if (now > expiryDate) {
+                return res.status(403).json({ success: false, message: 'Account expired' });
+            }
+        }
+
+        // 🔥 Password check
         if (data.password !== password) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // 🔥 4. Token generate karo
+        // 🔥 Device bind check — 1 Reseller = 1 Device
+        if (data.device_id && data.device_id !== device_id) {
+            console.log(`❌ Device mismatch! ${username} is bound to ${data.device_id}, trying from ${device_id}`);
+            return res.status(403).json({
+                success: false,
+                message: 'This account is already bound to another device!'
+            });
+        }
+
+        // 🔥 Agar device_id NULL hai toh bind karo (pehli baar)
+        if (!data.device_id) {
+            console.log(`🔗 Binding device for ${username}: ${device_id}`);
+            await supabase
+                .from('resellers')
+                .update({ device_id: device_id })
+                .eq('username', username);
+        }
+
+        // 🔥 Token generate
         const token = Buffer.from(`${data.id}:${Date.now()}`).toString('base64');
 
         res.json({
             success: true,
             token: token,
             role: data.role || 'reseller',
-            user: data.username
+            user: data.username,
+            expiry: data.expiry,
+            device_bound: data.device_id || device_id
         });
     } catch (err) {
         console.error('❌ Login error:', err);
@@ -495,20 +466,282 @@ app.post('/reseller/login', async (req, res) => {
     }
 });
 
+// ============================================
+// ➕ ADMIN - ADD RESELLER (With Expiry)
+// ============================================
+app.post('/admin/add-reseller', async (req, res) => {
+    const { username, password, role, expiry } = req.body;
 
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Username and password required' });
+    }
 
+    try {
+        const { data: existing } = await supabase
+            .from('resellers')
+            .select('username')
+            .eq('username', username)
+            .single();
 
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Username already exists' });
+        }
 
+        const { data, error } = await supabase
+            .from('resellers')
+            .insert({
+                username: username,
+                password: password,
+                role: role || 'reseller',
+                is_active: true,
+                expiry: expiry || null
+            })
+            .select()
+            .single();
 
+        if (error) throw new Error(error.message);
 
+        res.json({
+            success: true,
+            message: `Reseller "${username}" added successfully!`,
+            reseller: data
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
+// ============================================
+// 🗑️ ADMIN - DELETE RESELLER
+// ============================================
+app.delete('/admin/delete-reseller/:username', async (req, res) => {
+    const { username } = req.params;
 
+    if (username === 'admin') {
+        return res.status(403).json({ success: false, message: 'Cannot delete admin' });
+    }
 
+    try {
+        const { error } = await supabase
+            .from('resellers')
+            .delete()
+            .eq('username', username);
 
+        if (error) throw new Error(error.message);
 
+        res.json({
+            success: true,
+            message: `Reseller "${username}" deleted successfully!`
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
+// ============================================
+// 📋 ADMIN - LIST ALL RESELLERS
+// ============================================
+app.get('/admin/list-resellers', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('resellers')
+            .select('*')
+            .order('created_at', { ascending: false });
 
+        if (error) throw new Error(error.message);
 
+        res.json({
+            success: true,
+            resellers: data
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 
+// ============================================
+// 🔄 ADMIN - RESET DEVICE BIND
+// ============================================
+app.post('/admin/reset-device/:username', async (req, res) => {
+    const { username } = req.params;
 
+    try {
+        const { error } = await supabase
+            .from('resellers')
+            .update({ device_id: null })
+            .eq('username', username);
 
+        if (error) throw new Error(error.message);
+
+        res.json({
+            success: true,
+            message: `Device binding reset for ${username}`
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ============================================
+// 📊 RESELLER DASHBOARD
+// ============================================
+app.get('/reseller/dashboard', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    try {
+        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
+
+        const { data: keys, error: keysErr } = await supabase
+            .from('keys')
+            .select('*')
+            .eq('reseller_id', resellerId);
+
+        if (keysErr) throw new Error(keysErr.message);
+
+        const { data: reseller } = await supabase
+            .from('resellers')
+            .select('allowed_apks')
+            .eq('id', resellerId)
+            .single();
+
+        let apks = [];
+        if (reseller?.allowed_apks?.length) {
+            const { data: apkData } = await supabase
+                .from('apks')
+                .select('*')
+                .in('id', reseller.allowed_apks);
+            apks = apkData || [];
+        }
+
+        res.json({
+            success: true,
+            total: keys.length,
+            active: keys.filter(k => k.status === 'active').length,
+            expired: keys.filter(k => k.status === 'expired').length,
+            keys: keys,
+            apks: apks
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ============================================
+// ➕ CREATE KEY
+// ============================================
+app.post('/reseller/key/create', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const { key, expiry, apk_id } = req.body;
+    if (!key || !expiry || !apk_id) {
+        return res.status(400).json({ success: false, message: 'All fields required' });
+    }
+
+    try {
+        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
+
+        const { data: existing } = await supabase
+            .from('keys')
+            .select('key')
+            .eq('key', key)
+            .single();
+
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Key already exists' });
+        }
+
+        const { data, error } = await supabase
+            .from('keys')
+            .insert({ key, expiry, apk_id, reseller_id: resellerId, status: 'active' })
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        res.json({ success: true, message: 'Key created', key: data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ============================================
+// 🗑️ DELETE KEY
+// ============================================
+app.delete('/reseller/key/:key', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const { key } = req.params;
+
+    try {
+        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
+
+        const { data: existing } = await supabase
+            .from('keys')
+            .select('*')
+            .eq('key', key)
+            .eq('reseller_id', resellerId)
+            .single();
+
+        if (!existing) {
+            return res.status(404).json({ success: false, message: 'Key not found or not yours' });
+        }
+
+        const { error } = await supabase
+            .from('keys')
+            .delete()
+            .eq('key', key);
+
+        if (error) throw new Error(error.message);
+
+        res.json({ success: true, message: 'Key deleted' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ============================================
+// 👑 ADMIN DASHBOARD
+// ============================================
+app.get('/admin/dashboard', async (req, res) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    try {
+        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
+
+        const { data: reseller } = await supabase
+            .from('resellers')
+            .select('role')
+            .eq('id', resellerId)
+            .single();
+
+        if (reseller?.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+
+        const { data: keys, error: keysErr } = await supabase
+            .from('keys')
+            .select('*');
+
+        const { data: resellers, error: resellersErr } = await supabase
+            .from('resellers')
+            .select('*');
+
+        if (keysErr || resellersErr) throw new Error('Database error');
+
+        res.json({
+            success: true,
+            total_keys: keys.length,
+            active_keys: keys.filter(k => k.status === 'active').length,
+            expired_keys: keys.filter(k => k.status === 'expired').length,
+            total_resellers: resellers.length,
+            resellers: resellers,
+            keys: keys
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
