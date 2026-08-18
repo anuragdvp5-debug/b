@@ -429,25 +429,8 @@ app.post('/api/verify', (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ============================================
-// 🔐 RESELLER / ADMIN LOGIN
+// 🔐 RESELLER / ADMIN LOGIN (Auto-Create)
 // ============================================
 app.post('/reseller/login', async (req, res) => {
     const { username, password } = req.body;
@@ -457,22 +440,49 @@ app.post('/reseller/login', async (req, res) => {
     }
 
     try {
-        const { data, error } = await supabase
+        // 🔥 1. Check if reseller exists
+        let { data, error } = await supabase
             .from('resellers')
             .select('*')
             .eq('username', username)
             .single();
 
+        // 🔥 2. Agar nahi hai toh auto-create karo
         if (error || !data) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            // Admin username ko auto-create mat karo
+            if (username === 'admin') {
+                return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            }
+
+            console.log(`📝 Reseller "${username}" not found. Auto-creating...`);
+
+            const { data: newData, error: insertError } = await supabase
+                .from('resellers')
+                .insert({
+                    username: username,
+                    password: password,
+                    role: 'reseller',
+                    is_active: true,
+                    created_at: new Date()
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                console.error('❌ Auto-create failed:', insertError);
+                return res.status(500).json({ success: false, message: 'Registration failed' });
+            }
+
+            data = newData;
+            console.log(`✅ Reseller "${username}" auto-created!`);
         }
 
-        // 🔥 Simple password check (pehle hash karo production mein)
+        // 🔥 3. Password check
         if (data.password !== password) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        // Token generate karo (JWT)
+        // 🔥 4. Token generate karo
         const token = Buffer.from(`${data.id}:${Date.now()}`).toString('base64');
 
         res.json({
@@ -482,181 +492,26 @@ app.post('/reseller/login', async (req, res) => {
             user: data.username
         });
     } catch (err) {
+        console.error('❌ Login error:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
-// ============================================
-// 📊 RESELLER DASHBOARD
-// ============================================
-app.get('/reseller/dashboard', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    try {
-        // Token se reseller_id extract karo
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
 
-        // Reseller ki apni keys
-        const { data: keys, error: keysErr } = await supabase
-            .from('keys')
-            .select('*')
-            .eq('reseller_id', resellerId);
 
-        if (keysErr) throw new Error(keysErr.message);
 
-        // Allowed APKs
-        const { data: reseller } = await supabase
-            .from('resellers')
-            .select('allowed_apks')
-            .eq('id', resellerId)
-            .single();
 
-        let apks = [];
-        if (reseller?.allowed_apks?.length) {
-            const { data: apkData } = await supabase
-                .from('apks')
-                .select('*')
-                .in('id', reseller.allowed_apks);
-            apks = apkData || [];
-        }
 
-        res.json({
-            success: true,
-            total: keys.length,
-            active: keys.filter(k => k.status === 'active').length,
-            expired: keys.filter(k => k.status === 'expired').length,
-            keys: keys,
-            apks: apks
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
 
-// ============================================
-// ➕ CREATE KEY
-// ============================================
-app.post('/reseller/key/create', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const { key, expiry, apk_id } = req.body;
-    if (!key || !expiry || !apk_id) {
-        return res.status(400).json({ success: false, message: 'All fields required' });
-    }
 
-    try {
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
 
-        // Check if key already exists
-        const { data: existing } = await supabase
-            .from('keys')
-            .select('key')
-            .eq('key', key)
-            .single();
 
-        if (existing) {
-            return res.status(400).json({ success: false, message: 'Key already exists' });
-        }
 
-        const { data, error } = await supabase
-            .from('keys')
-            .insert({ key, expiry, apk_id, reseller_id: resellerId, status: 'active' })
-            .select()
-            .single();
 
-        if (error) throw new Error(error.message);
 
-        res.json({ success: true, message: 'Key created', key: data });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
 
-// ============================================
-// 🗑️ DELETE KEY
-// ============================================
-app.delete('/reseller/key/:key', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-    const { key } = req.params;
-
-    try {
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
-
-        // Check if key belongs to this reseller
-        const { data: existing } = await supabase
-            .from('keys')
-            .select('*')
-            .eq('key', key)
-            .eq('reseller_id', resellerId)
-            .single();
-
-        if (!existing) {
-            return res.status(404).json({ success: false, message: 'Key not found or not yours' });
-        }
-
-        const { error } = await supabase
-            .from('keys')
-            .delete()
-            .eq('key', key);
-
-        if (error) throw new Error(error.message);
-
-        res.json({ success: true, message: 'Key deleted' });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
-
-// ============================================
-// 👑 ADMIN DASHBOARD
-// ============================================
-app.get('/admin/dashboard', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-    try {
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
-
-        // Check if user is admin
-        const { data: reseller } = await supabase
-            .from('resellers')
-            .select('role')
-            .eq('id', resellerId)
-            .single();
-
-        if (reseller?.role !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Forbidden' });
-        }
-
-        // All keys
-        const { data: keys, error: keysErr } = await supabase
-            .from('keys')
-            .select('*');
-
-        // All resellers
-        const { data: resellers, error: resellersErr } = await supabase
-            .from('resellers')
-            .select('*');
-
-        if (keysErr || resellersErr) throw new Error('Database error');
-
-        res.json({
-            success: true,
-            total_keys: keys.length,
-            active_keys: keys.filter(k => k.status === 'active').length,
-            expired_keys: keys.filter(k => k.status === 'expired').length,
-            total_resellers: resellers.length,
-            resellers: resellers,
-            keys: keys
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
 
 
 
