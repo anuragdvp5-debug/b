@@ -364,8 +364,32 @@ app.post('/api/verify', (req, res) => {
     res.json({ success: true, message: 'Login successful' });
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ============================================
-// 🔐 RESELLER / ADMIN LOGIN (Auto-Create + Expiry + Device Bind)
+// 🔐 RESELLER / ADMIN LOGIN (NO Auto-Create)
 // ============================================
 app.post('/reseller/login', async (req, res) => {
     const { username, password, device_id } = req.body;
@@ -375,41 +399,17 @@ app.post('/reseller/login', async (req, res) => {
     }
 
     try {
-        let { data, error } = await supabase
+        // 🔥 Check if reseller exists
+        const { data, error } = await supabase
             .from('resellers')
             .select('*')
             .eq('username', username)
             .single();
 
-        // 🔥 Auto-create (sirf reseller)
+        // ❌ Agar nahi hai toh INVALID credentials (NO auto-create)
         if (error || !data) {
-            if (username === 'admin') {
-                return res.status(401).json({ success: false, message: 'Invalid credentials' });
-            }
-
-            console.log(`📝 Reseller "${username}" not found. Auto-creating...`);
-
-            const { data: newData, error: insertError } = await supabase
-                .from('resellers')
-                .insert({
-                    username: username,
-                    password: password,
-                    role: 'reseller',
-                    is_active: true,
-                    expiry: null,
-                    device_id: device_id,
-                    created_at: new Date()
-                })
-                .select()
-                .single();
-
-            if (insertError) {
-                console.error('❌ Auto-create failed:', insertError);
-                return res.status(500).json({ success: false, message: 'Registration failed' });
-            }
-
-            data = newData;
-            console.log(`✅ Reseller "${username}" auto-created & device bound!`);
+            console.log(`❌ Reseller "${username}" not found.`);
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
         // 🔥 Check active
@@ -465,6 +465,7 @@ app.post('/reseller/login', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
 
 // ============================================
 // ➕ ADMIN - ADD RESELLER (With Expiry)
