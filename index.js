@@ -369,6 +369,38 @@ app.post('/connect/hacker002', async (req, res) => {
 
 
 
+// ============================================
+// 📱 4th APP CONTROL
+// ============================================
+const appControls = {
+    app4: { name: "App 4", status: "active", version: "1.0.0" }
+};
+
+app.post('/api/app4/control', (req, res) => {
+    const { action } = req.body;
+    if (action === 'enable' || action === 'disable') {
+        appControls.app4.status = action === 'enable' ? 'active' : 'inactive';
+        res.json({ success: true, message: `App 4 ${action}d`, app: appControls.app4 });
+    } else {
+        res.json({ success: false, message: "Invalid action" });
+    }
+});
+
+app.get('/api/app4/status', (req, res) => {
+    res.json({ success: true, app: appControls.app4 });
+});
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
