@@ -1,8 +1,28 @@
 const express = require('express');
 const app = express();
+const cors = require('cors');  
 const crypto = require('crypto');
 const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
+
+
+
+
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+}));
+
+
+
+
+
+
+
+
 
 // ==================== SUPABASE ====================
 const supabase = createClient(
