@@ -427,8 +427,6 @@ app.post('/api/verify', (req, res) => {
 
 
 
-
-
 // ============================================
 // 🔐 RESELLER / ADMIN LOGIN (Auto-Create)
 // ============================================
@@ -496,9 +494,6 @@ app.post('/reseller/login', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
-
-
-
 
 
 
