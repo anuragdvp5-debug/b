@@ -380,6 +380,52 @@ app.post('/api/verify', (req, res) => {
 
 
 
+// ============================================
+// 🌱 SEED RESELLERS (Server Start Pe Auto-Add)
+// ============================================
+async function seedResellers() {
+    const defaultResellers = [
+        { username: 'reseller1', password: 'pass123', role: 'reseller', expiry: '2026-12-31' },
+        { username: 'reseller2', password: 'pass123', role: 'reseller', expiry: '2026-12-31' },
+        { username: 'reseller3', password: 'pass123', role: 'reseller', expiry: '2026-12-31' },
+        { username: 'reseller4', password: 'pass123', role: 'reseller', expiry: '2026-12-31' }
+    ];
+
+    for (const reseller of defaultResellers) {
+        try {
+            const { data: existing } = await supabase
+                .from('resellers')
+                .select('username')
+                .eq('username', reseller.username)
+                .single();
+
+            if (!existing) {
+                const { error } = await supabase
+                    .from('resellers')
+                    .insert({
+                        username: reseller.username,
+                        password: reseller.password,
+                        role: reseller.role || 'reseller',
+                        is_active: true,
+                        expiry: reseller.expiry || null
+                    });
+
+                if (error) {
+                    console.error(`❌ Failed to seed ${reseller.username}:`, error.message);
+                } else {
+                    console.log(`✅ Seeded reseller: ${reseller.username}`);
+                }
+            } else {
+                console.log(`⏩ Reseller already exists: ${reseller.username}`);
+            }
+        } catch (err) {
+            console.error(`❌ Error seeding ${reseller.username}:`, err.message);
+        }
+    }
+}
+
+
+
 
 
 
@@ -467,6 +513,11 @@ app.post('/reseller/login', async (req, res) => {
 });
 
 
+
+
+
+
+
 // ============================================
 // ➕ ADMIN - ADD RESELLER (With Expiry)
 // ============================================
@@ -511,6 +562,20 @@ app.post('/admin/add-reseller', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ============================================
 // 🗑️ ADMIN - DELETE RESELLER
