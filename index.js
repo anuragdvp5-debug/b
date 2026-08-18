@@ -371,25 +371,30 @@ app.post('/connect/hacker002', async (req, res) => {
 
 
 
-
-
-// ============================================
-// 🔑 LICENSE VERIFICATION - /api/verify
-// ============================================
 app.post('/api/verify', (req, res) => {
     const { key, device, label, nonce } = req.body;
-    console.log('📥 Received:', { key, device, label, nonce });
-    
-    if (key === "VALID_KEY" || key === "test123") {
-        res.json({ success: true, message: "✅ Valid license" });
-    } else {
-        res.json({ success: false, message: "❌ Invalid key" });
+    console.log('📥 [4th APK] Verify attempt:', { key, device, label, nonce });
+
+    if (!key) {
+        return res.json({ success: false, message: 'Missing key' });
     }
+
+    // 🔥 EXISTING SYSTEM SE CHECK
+    if (!KEYS[key]) {
+        console.log(`❌ Key not found: ${key}`);
+        return res.json({ success: false, message: 'Invalid key' });
+    }
+
+    const expiryDate = new Date(KEYS[key].expiry);
+    const now = new Date();
+    if (now > expiryDate) {
+        console.log(`⏰ Key expired: ${key}`);
+        return res.json({ success: false, message: 'Key expired' });
+    }
+
+    console.log(`✅ [4th APK] Login success: ${key}`);
+    res.json({ success: true, message: 'Login successful' });
 });
-
-
-
-
 
 
 
