@@ -433,9 +433,8 @@ async function seedResellers() {
 
 
 
-
 // ============================================
-// 🔐 RESELLER / ADMIN LOGIN (NO Auto-Create)
+// 🔐 RESELLER LOGIN (Jaise Key Login — Auto Save in Supabase)
 // ============================================
 app.post('/reseller/login', async (req, res) => {
     const { username, password, device_id } = req.body;
@@ -444,37 +443,59 @@ app.post('/reseller/login', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing credentials or device ID' });
     }
 
+    // 🔥 Pehle check karo — kya reseller exist karta hai (RESELLERS object mein)
+    if (!RESELLERS[username]) {
+        console.log(`❌ Reseller "${username}" not found.`);
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // 🔥 Password check
+    if (RESELLERS[username].password !== password) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // 🔥 Expiry check
+    if (RESELLERS[username].expiry) {
+        const expiryDate = new Date(RESELLERS[username].expiry);
+        const now = new Date();
+        if (now > expiryDate) {
+            return res.status(403).json({ success: false, message: 'Account expired' });
+        }
+    }
+
     try {
-        // 🔥 Check if reseller exists
-        const { data, error } = await supabase
+        // 🔥 Check if reseller already exists in Supabase
+        let { data, error } = await supabase
             .from('resellers')
             .select('*')
             .eq('username', username)
             .single();
 
-        // ❌ Agar nahi hai toh INVALID credentials (NO auto-create)
+        // 🔥 Agar Supabase mein nahi hai toh insert karo (jaise keys mein hota hai)
         if (error || !data) {
-            console.log(`❌ Reseller "${username}" not found.`);
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
+            console.log(`📝 Reseller "${username}" not in Supabase. Inserting...`);
 
-        // 🔥 Check active
-        if (!data.is_active) {
-            return res.status(403).json({ success: false, message: 'Account deactivated' });
-        }
+            const { data: newData, error: insertError } = await supabase
+                .from('resellers')
+                .insert({
+                    username: username,
+                    password: password,
+                    role: 'reseller',
+                    is_active: true,
+                    expiry: RESELLERS[username].expiry || null,
+                    device_id: device_id,  // 🔥 Pehli baar device bind
+                    created_at: new Date()
+                })
+                .select()
+                .single();
 
-        // 🔥 Check expiry
-        if (data.expiry) {
-            const expiryDate = new Date(data.expiry);
-            const now = new Date();
-            if (now > expiryDate) {
-                return res.status(403).json({ success: false, message: 'Account expired' });
+            if (insertError) {
+                console.error('❌ Insert failed:', insertError);
+                return res.status(500).json({ success: false, message: 'Registration failed' });
             }
-        }
 
-        // 🔥 Password check
-        if (data.password !== password) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            data = newData;
+            console.log(`✅ Reseller "${username}" inserted in Supabase with device bind!`);
         }
 
         // 🔥 Device bind check — 1 Reseller = 1 Device
@@ -511,6 +532,23 @@ app.post('/reseller/login', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+
+
+// ==================== RESELLERS ====================
+const RESELLERS = {
+    "reseller1": { password: "pass123", expiry: "2026-12-31" },
+    "reseller2": { password: "pass123", expiry: "2026-12-31" },
+    "reseller3": { password: "pass123", expiry: "2026-12-31" },
+    "reseller4": { password: "pass123", expiry: "2026-12-31" }
+};
+
+
+
+
+
+
 
 
 
