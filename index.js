@@ -76,14 +76,35 @@ async function saveToSupabase(user_key, device_id) {
     }
 }
 
-// ==================== KEYS ====================
-const KEYS = {
-    "akash": { expiry: "2026-08-19" },
-    "suraj": { expiry: "2026-08-19" },
-    "vivek": { expiry: "2026-08-20" },
-    "anurag1": { expiry: "2026-08-23" },
-    "newuser_device_005": { expiry: "2026-09-10" }
-};
+// ============================================
+// 🔥 KEYS — SUPABASE SE DYNAMIC FETCH
+// ============================================
+async function getKeysFromSupabase() {
+    try {
+        const { data, error } = await supabase
+            .from('keys')
+            .select('key, expiry, apk_id, reseller_id, status');
+
+        if (error) {
+            console.error('❌ Error fetching keys:', error);
+            return {};
+        }
+
+        const keys = {};
+        data.forEach(row => {
+            keys[row.key] = {
+                expiry: row.expiry,
+                apk_id: row.apk_id,
+                reseller_id: row.reseller_id,
+                status: row.status
+            };
+        });
+        return keys;
+    } catch (err) {
+        console.error('❌ Supabase connection failed:', err);
+        return {};
+    }
+}
 
 // ==================== MIDDLEWARE ====================
 app.use(express.json());
@@ -120,6 +141,9 @@ app.post('/connect/*', async (req, res) => {
 
     console.log(`🔑 Received Key: ${user_key}`);
     console.log(`📱 Device Serial: ${serial || 'N/A'}`);
+
+    // 🔥 DYNAMIC FETCH — Supabase se keys lo
+    const KEYS = await getKeysFromSupabase();
 
     if (!KEYS[user_key]) {
         console.log(`❌ Key not registered: ${user_key}`);
@@ -221,7 +245,6 @@ async function verifyReseller(req, res, next) {
         return res.status(401).json({ success: false, message: 'Invalid token' });
     }
 
-    // 🔥 DB ME CHECK KARO — RESELLER EXIST KARTA HAI?
     const { data: reseller, error } = await supabase
         .from('resellers')
         .select('id, username, role, is_active, expiry')
@@ -229,7 +252,6 @@ async function verifyReseller(req, res, next) {
         .single();
 
     if (error || !reseller) {
-        // 🔥 USER DELETE HO CHUKA HAI!
         return res.status(401).json({ success: false, message: 'Session invalid, please login again' });
     }
 
@@ -244,12 +266,10 @@ async function verifyReseller(req, res, next) {
         }
     }
 
-    // ✅ RESELLER DATA REQUEST KE SATH ATTACH
     req.reseller = reseller;
     next();
 }
 
-// 🔥 ADMIN ROLE CHECK MIDDLEWARE
 function requireAdmin(req, res, next) {
     if (req.reseller.role !== 'admin') {
         return res.status(403).json({ success: false, message: 'Forbidden - Admins only' });
@@ -265,7 +285,6 @@ app.post('/reseller/login', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Missing credentials or device ID' });
     }
 
-    // 🔥 Dynamic fetch from Supabase
     const RESELLERS = await getResellersFromSupabase();
 
     if (!RESELLERS[username]) {
@@ -350,17 +369,8 @@ app.post('/reseller/login', async (req, res) => {
     }
 });
 
-
-
-
-
-
-
-
-
-
 // ============================================
-// 📊 RESELLER DASHBOARD (with try/catch)
+// 📊 RESELLER DASHBOARD
 // ============================================
 app.get('/reseller/dashboard', verifyReseller, async (req, res) => {
     const resellerId = req.reseller.id;
@@ -390,7 +400,7 @@ app.get('/reseller/dashboard', verifyReseller, async (req, res) => {
 
         res.json({
             success: true,
-            username: req.reseller.username,   // ✅ BAS YEH EK LINE ADD KARO!
+            username: req.reseller.username,
             total: keys.length,
             active: keys.filter(k => k.status === 'active').length,
             expired: keys.filter(k => k.status === 'expired').length,
@@ -401,18 +411,6 @@ app.get('/reseller/dashboard', verifyReseller, async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
 // ============================================
 // ➕ CREATE KEY
@@ -482,15 +480,10 @@ app.delete('/reseller/key/:key', verifyReseller, async (req, res) => {
     }
 });
 
-
-
-
-
 // ============================================
-// 👑 ADMIN ROUTES (Protected + Admin Only)
+// 👑 ADMIN ROUTES
 // ============================================
 
-// Admin Dashboard
 app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
     try {
         const { data: keys, error: keysErr } = await supabase
@@ -505,7 +498,7 @@ app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
 
         res.json({
             success: true,
-            username: req.reseller.username,   // ✅ BAS YEH EK LINE ADD KARO!
+            username: req.reseller.username,
             total_keys: keys.length,
             active_keys: keys.filter(k => k.status === 'active').length,
             expired_keys: keys.filter(k => k.status === 'expired').length,
@@ -518,10 +511,6 @@ app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
     }
 });
 
-
-
-
-// Add Reseller
 app.post('/admin/add-reseller', verifyReseller, requireAdmin, async (req, res) => {
     const { username, password, role, expiry } = req.body;
 
@@ -564,7 +553,6 @@ app.post('/admin/add-reseller', verifyReseller, requireAdmin, async (req, res) =
     }
 });
 
-// Delete Reseller
 app.delete('/admin/delete-reseller/:username', verifyReseller, requireAdmin, async (req, res) => {
     const { username } = req.params;
 
@@ -589,7 +577,6 @@ app.delete('/admin/delete-reseller/:username', verifyReseller, requireAdmin, asy
     }
 });
 
-// List Resellers
 app.get('/admin/list-resellers', verifyReseller, requireAdmin, async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -608,7 +595,6 @@ app.get('/admin/list-resellers', verifyReseller, requireAdmin, async (req, res) 
     }
 });
 
-// Reset Device Bind
 app.post('/admin/reset-device/:username', verifyReseller, requireAdmin, async (req, res) => {
     const { username } = req.params;
 
@@ -635,9 +621,13 @@ app.get('/admin/check-key', verifyReseller, requireAdmin, async (req, res) => {
     if (!user_key) {
         return res.status(400).json({ error: 'Missing user_key' });
     }
+
+    const KEYS = await getKeysFromSupabase();
+
     if (!KEYS[user_key]) {
         return res.json({ valid: false, reason: 'Key not found' });
     }
+
     const expiryDate = new Date(KEYS[user_key].expiry);
     const now = new Date();
     const isExpired = now > expiryDate;
@@ -655,6 +645,7 @@ app.get('/admin/check-key', verifyReseller, requireAdmin, async (req, res) => {
 });
 
 app.get('/admin/list-keys', verifyReseller, requireAdmin, async (req, res) => {
+    const KEYS = await getKeysFromSupabase();
     const freshBindings = await getBindingsFromSupabase();
     const total = Object.keys(KEYS).length;
     const now = new Date();
@@ -672,6 +663,9 @@ app.post('/admin/reset-device', verifyReseller, requireAdmin, async (req, res) =
     if (!user_key) {
         return res.status(400).json({ error: 'Missing user_key' });
     }
+
+    const KEYS = await getKeysFromSupabase();
+
     if (!KEYS[user_key]) {
         return res.status(404).json({ error: 'Key not found' });
     }
@@ -690,7 +684,8 @@ app.post('/admin/reset-device', verifyReseller, requireAdmin, async (req, res) =
 });
 
 // ==================== ROOT ====================
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
+    const KEYS = await getKeysFromSupabase();
     res.json({
         status: "🚀 Server is running!",
         total_keys: Object.keys(KEYS).length,
@@ -704,11 +699,14 @@ app.get('/', (req, res) => {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
         console.log(`\n🚀 Server running on port ${PORT}`);
-        console.log(`\n✅ ===== REGISTERED KEYS =====`);
-        Object.keys(KEYS).forEach(k => {
-            const bound = bindings[k] ? `🔒 Bound to: ${bindings[k]}` : '🔓 Not bound yet';
-            console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry} | ${bound}`);
-        });
+        console.log(`\n✅ ===== KEYS FROM SUPABASE =====`);
+        (async () => {
+            const KEYS = await getKeysFromSupabase();
+            Object.keys(KEYS).forEach(k => {
+                const bound = bindings[k] ? `🔒 Bound to: ${bindings[k]}` : '🔓 Not bound yet';
+                console.log(`   🔑 ${k} → Expires: ${KEYS[k].expiry} | ${bound}`);
+            });
+        })();
         console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (Direct Supabase Check)`);
     });
 })();
