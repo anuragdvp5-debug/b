@@ -175,39 +175,46 @@ app.post('/connect/*', async (req, res) => {
     });
 });
 
+// ==================== DYNAMIC RESELLER SYSTEM ====================
 
+// 🔥 Har login pe Supabase se fresh fetch
+async function getResellersFromSupabase() {
+    try {
+        const { data, error } = await supabase
+            .from('resellers')
+            .select('username, password, expiry, role, is_active');
 
+        if (error) {
+            console.error('❌ Error fetching resellers:', error);
+            return {};
+        }
 
+        const resellers = {};
+        data.forEach(row => {
+            resellers[row.username] = {
+                password: row.password,
+                expiry: row.expiry,
+                role: row.role || 'reseller',
+                is_active: row.is_active
+            };
+        });
+        return resellers;
+    } catch (err) {
+        console.error('❌ Supabase connection failed:', err);
+        return {};
+    }
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ==================== RESELLER SYSTEM ====================
-const RESELLERS = {
-    "reseller1": { password: "pass123", expiry: "2026-12-31" },
-    "reseller2": { password: "pass123", expiry: "2026-12-31" },
-    "reseller3": { password: "pass123", expiry: "2026-12-31" },
-    "reseller4": { password: "pass123", expiry: "2026-12-31" },
-    "ANURAGMODS": { password: "123anurag", expiry: null }
-};
-
-// Reseller Login
+// Reseller Login (Dynamic)
 app.post('/reseller/login', async (req, res) => {
     const { username, password, device_id } = req.body;
 
     if (!username || !password || !device_id) {
         return res.status(400).json({ success: false, message: 'Missing credentials or device ID' });
     }
+
+    // 🔥 Dynamic fetch from Supabase
+    const RESELLERS = await getResellersFromSupabase();
 
     if (!RESELLERS[username]) {
         console.log(`❌ Reseller "${username}" not found.`);
@@ -241,7 +248,7 @@ app.post('/reseller/login', async (req, res) => {
                 .insert({
                     username: username,
                     password: password,
-                    role: 'reseller',
+                    role: RESELLERS[username].role || 'reseller',
                     is_active: true,
                     expiry: RESELLERS[username].expiry || null,
                     device_id: device_id,
@@ -404,8 +411,6 @@ app.delete('/reseller/key/:key', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
-
-
 
 // ==================== ADMIN SYSTEM ====================
 
