@@ -175,24 +175,6 @@ app.post('/connect/*', async (req, res) => {
     });
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ==================== DYNAMIC RESELLER SYSTEM ====================
 
 // 🔥 Har login pe Supabase se fresh fetch
@@ -223,7 +205,59 @@ async function getResellersFromSupabase() {
     }
 }
 
-// Reseller Login (Dynamic)
+// ============================================
+// 🔐 AUTH MIDDLEWARE — DB VERIFIED
+// ============================================
+async function verifyReseller(req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    let resellerId;
+    try {
+        resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
+    } catch (e) {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+
+    // 🔥 DB ME CHECK KARO — RESELLER EXIST KARTA HAI?
+    const { data: reseller, error } = await supabase
+        .from('resellers')
+        .select('id, username, role, is_active, expiry')
+        .eq('id', resellerId)
+        .single();
+
+    if (error || !reseller) {
+        // 🔥 USER DELETE HO CHUKA HAI!
+        return res.status(401).json({ success: false, message: 'Session invalid, please login again' });
+    }
+
+    if (reseller.is_active === false) {
+        return res.status(403).json({ success: false, message: 'Account disabled' });
+    }
+
+    if (reseller.expiry) {
+        const expiryDate = new Date(reseller.expiry);
+        if (new Date() > expiryDate) {
+            return res.status(403).json({ success: false, message: 'Account expired' });
+        }
+    }
+
+    // ✅ RESELLER DATA REQUEST KE SATH ATTACH
+    req.reseller = reseller;
+    next();
+}
+
+// 🔥 ADMIN ROLE CHECK MIDDLEWARE
+function requireAdmin(req, res, next) {
+    if (req.reseller.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Forbidden - Admins only' });
+    }
+    next();
+}
+
+// Reseller Login
 app.post('/reseller/login', async (req, res) => {
     const { username, password, device_id } = req.body;
 
@@ -316,14 +350,13 @@ app.post('/reseller/login', async (req, res) => {
     }
 });
 
-// Reseller Dashboard
-app.get('/reseller/dashboard', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+// ============================================
+// 📊 RESELLER DASHBOARD (with try/catch)
+// ============================================
+app.get('/reseller/dashboard', verifyReseller, async (req, res) => {
+    const resellerId = req.reseller.id;
 
     try {
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
-
         const { data: keys, error: keysErr } = await supabase
             .from('keys')
             .select('*')
@@ -359,19 +392,18 @@ app.get('/reseller/dashboard', async (req, res) => {
     }
 });
 
-// Create Key
-app.post('/reseller/key/create', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
+// ============================================
+// ➕ CREATE KEY
+// ============================================
+app.post('/reseller/key/create', verifyReseller, async (req, res) => {
+    const resellerId = req.reseller.id;
     const { key, expiry, apk_id } = req.body;
+
     if (!key || !expiry || !apk_id) {
         return res.status(400).json({ success: false, message: 'All fields required' });
     }
 
     try {
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
-
         const { data: existing } = await supabase
             .from('keys')
             .select('key')
@@ -396,16 +428,14 @@ app.post('/reseller/key/create', async (req, res) => {
     }
 });
 
-// Delete Key
-app.delete('/reseller/key/:key', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
+// ============================================
+// 🗑️ DELETE KEY
+// ============================================
+app.delete('/reseller/key/:key', verifyReseller, async (req, res) => {
+    const resellerId = req.reseller.id;
     const { key } = req.params;
 
     try {
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
-
         const { data: existing } = await supabase
             .from('keys')
             .select('*')
@@ -430,26 +460,13 @@ app.delete('/reseller/key/:key', async (req, res) => {
     }
 });
 
-// ==================== ADMIN SYSTEM ====================
+// ============================================
+// 👑 ADMIN ROUTES (Protected + Admin Only)
+// ============================================
 
 // Admin Dashboard
-app.get('/admin/dashboard', async (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
+app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
     try {
-        const resellerId = Buffer.from(token, 'base64').toString().split(':')[0];
-
-        const { data: reseller } = await supabase
-            .from('resellers')
-            .select('role')
-            .eq('id', resellerId)
-            .single();
-
-        if (reseller?.role !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Forbidden' });
-        }
-
         const { data: keys, error: keysErr } = await supabase
             .from('keys')
             .select('*');
@@ -475,7 +492,7 @@ app.get('/admin/dashboard', async (req, res) => {
 });
 
 // Add Reseller
-app.post('/admin/add-reseller', async (req, res) => {
+app.post('/admin/add-reseller', verifyReseller, requireAdmin, async (req, res) => {
     const { username, password, role, expiry } = req.body;
 
     if (!username || !password) {
@@ -518,7 +535,7 @@ app.post('/admin/add-reseller', async (req, res) => {
 });
 
 // Delete Reseller
-app.delete('/admin/delete-reseller/:username', async (req, res) => {
+app.delete('/admin/delete-reseller/:username', verifyReseller, requireAdmin, async (req, res) => {
     const { username } = req.params;
 
     if (username === 'admin') {
@@ -543,7 +560,7 @@ app.delete('/admin/delete-reseller/:username', async (req, res) => {
 });
 
 // List Resellers
-app.get('/admin/list-resellers', async (req, res) => {
+app.get('/admin/list-resellers', verifyReseller, requireAdmin, async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('resellers')
@@ -562,7 +579,7 @@ app.get('/admin/list-resellers', async (req, res) => {
 });
 
 // Reset Device Bind
-app.post('/admin/reset-device/:username', async (req, res) => {
+app.post('/admin/reset-device/:username', verifyReseller, requireAdmin, async (req, res) => {
     const { username } = req.params;
 
     try {
@@ -583,7 +600,7 @@ app.post('/admin/reset-device/:username', async (req, res) => {
 });
 
 // ==================== LEGACY ADMIN APIs ====================
-app.get('/admin/check-key', async (req, res) => {
+app.get('/admin/check-key', verifyReseller, requireAdmin, async (req, res) => {
     const { user_key } = req.query;
     if (!user_key) {
         return res.status(400).json({ error: 'Missing user_key' });
@@ -607,7 +624,7 @@ app.get('/admin/check-key', async (req, res) => {
     });
 });
 
-app.get('/admin/list-keys', async (req, res) => {
+app.get('/admin/list-keys', verifyReseller, requireAdmin, async (req, res) => {
     const freshBindings = await getBindingsFromSupabase();
     const total = Object.keys(KEYS).length;
     const now = new Date();
@@ -620,7 +637,7 @@ app.get('/admin/list-keys', async (req, res) => {
     res.json({ total, active, expired, device_bound: bound });
 });
 
-app.post('/admin/reset-device', async (req, res) => {
+app.post('/admin/reset-device', verifyReseller, requireAdmin, async (req, res) => {
     const { user_key } = req.body;
     if (!user_key) {
         return res.status(400).json({ error: 'Missing user_key' });
