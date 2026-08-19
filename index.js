@@ -350,6 +350,15 @@ app.post('/reseller/login', async (req, res) => {
     }
 });
 
+
+
+
+
+
+
+
+
+
 // ============================================
 // 📊 RESELLER DASHBOARD (with try/catch)
 // ============================================
@@ -381,6 +390,7 @@ app.get('/reseller/dashboard', verifyReseller, async (req, res) => {
 
         res.json({
             success: true,
+            username: req.reseller.username,   // ✅ BAS YEH EK LINE ADD KARO!
             total: keys.length,
             active: keys.filter(k => k.status === 'active').length,
             expired: keys.filter(k => k.status === 'expired').length,
@@ -391,6 +401,18 @@ app.get('/reseller/dashboard', verifyReseller, async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ============================================
 // ➕ CREATE KEY
@@ -460,6 +482,10 @@ app.delete('/reseller/key/:key', verifyReseller, async (req, res) => {
     }
 });
 
+
+
+
+
 // ============================================
 // 👑 ADMIN ROUTES (Protected + Admin Only)
 // ============================================
@@ -479,6 +505,7 @@ app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
 
         res.json({
             success: true,
+            username: req.reseller.username,   // ✅ BAS YEH EK LINE ADD KARO!
             total_keys: keys.length,
             active_keys: keys.filter(k => k.status === 'active').length,
             expired_keys: keys.filter(k => k.status === 'expired').length,
@@ -490,6 +517,9 @@ app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+
 
 // Add Reseller
 app.post('/admin/add-reseller', verifyReseller, requireAdmin, async (req, res) => {
