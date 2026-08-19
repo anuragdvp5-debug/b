@@ -541,6 +541,7 @@ const RESELLERS = {
     "reseller1": { password: "pass123", expiry: "2026-12-31" },
     "reseller2": { password: "pass123", expiry: "2026-12-31" },
     "reseller3": { password: "pass123", expiry: "2026-12-31" },
+    "ANURAGMODS": { password: "123anurag", expiry: null },  // 🔥 Admin Add
     "reseller4": { password: "pass123", expiry: "2026-12-31" }
 };
 
