@@ -480,6 +480,12 @@ app.delete('/reseller/key/:key', verifyReseller, async (req, res) => {
     }
 });
 
+
+
+
+
+
+
 // ============================================
 // 👑 ADMIN ROUTES
 // ============================================
@@ -488,7 +494,7 @@ app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
     try {
         const { data: keys, error: keysErr } = await supabase
             .from('keys')
-            .select('*');
+            .select(`*, resellers (username)`);
 
         const { data: resellers, error: resellersErr } = await supabase
             .from('resellers')
@@ -614,6 +620,23 @@ app.post('/admin/reset-device/:username', verifyReseller, requireAdmin, async (r
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ==================== LEGACY ADMIN APIs ====================
 app.get('/admin/check-key', verifyReseller, requireAdmin, async (req, res) => {
