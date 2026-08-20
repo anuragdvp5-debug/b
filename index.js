@@ -518,7 +518,7 @@ app.get('/admin/dashboard', verifyReseller, requireAdmin, async (req, res) => {
 });
 
 app.post('/admin/add-reseller', verifyReseller, requireAdmin, async (req, res) => {
-    const { username, password, role, expiry } = req.body;
+    const { username, password, role, expiry, allowed_apks } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ success: false, message: 'Username and password required' });
@@ -542,7 +542,8 @@ app.post('/admin/add-reseller', verifyReseller, requireAdmin, async (req, res) =
                 password: password,
                 role: role || 'reseller',
                 is_active: true,
-                expiry: expiry || null
+                expiry: expiry || null,
+                allowed_apks: allowed_apks || ['apk1']
             })
             .select()
             .single();
