@@ -734,3 +734,107 @@ app.get('/', async (req, res) => {
         console.log(`\n🔒 1 Key = 1 Device Mode ACTIVE (Direct Supabase Check)`);
     });
 })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ============================================
+// 📱 SECOND APK CONTROL (/login)
+// ============================================
+app.post('/login', async (req, res) => {
+    console.log(`\n📥 [SECOND APK] Login attempt:`, req.body);
+
+    const { username, password, hwid } = req.body;
+
+    // 🔥 username = key, password/hwid = device_id
+    const user_key = username;
+    const device_id = password || hwid;
+
+    if (!user_key || !device_id) {
+        return res.status(400).json({
+            success: false,
+            message: 'Missing key or device ID'
+        });
+    }
+
+    console.log(`🔑 Received Key: ${user_key}`);
+    console.log(`📱 Device ID: ${device_id}`);
+
+    // 🔥 DYNAMIC FETCH — Supabase se keys lo
+    const KEYS = await getKeysFromSupabase();
+
+    if (!KEYS[user_key]) {
+        console.log(`❌ Key not registered: ${user_key}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Invalid Key'
+        });
+    }
+
+    // 🔥 Expiry check
+    const expiryDate = new Date(KEYS[user_key].expiry);
+    const now = new Date();
+    if (now > expiryDate) {
+        console.log(`⏰ Key expired: ${user_key}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Key Expired'
+        });
+    }
+
+    // 🔥 Device bind check (1 Key = 1 Device)
+    const freshBindings = await getBindingsFromSupabase();
+    const deviceId = freshBindings[user_key];
+
+    if (!deviceId) {
+        bindings[user_key] = device_id;
+        saveBindings();
+        await saveToSupabase(user_key, device_id);
+        console.log(`🔗 Device bound: ${user_key} → ${device_id}`);
+    } else if (deviceId !== device_id) {
+        console.log(`❌ Device mismatch! ${user_key} is bound to ${deviceId}, but trying from ${device_id}`);
+        return res.status(403).json({
+            success: false,
+            message: 'This key is already used on another device!'
+        });
+    } else {
+        bindings[user_key] = device_id;
+        saveBindings();
+    }
+
+    // 🔥 Token generate
+    const token = generateToken(user_key, device_id);
+    const rng = generateRng();
+
+    console.log(`✅ [SECOND APK] Login success: ${user_key}`);
+    console.log(`🔑 Token: ${token}`);
+    console.log(`📅 Expires: ${KEYS[user_key].expiry}`);
+    console.log(`📱 Bound Device: ${device_id}`);
+
+    res.json({
+        success: true,
+        data: {
+            token: token,
+            rng: rng
+        }
+    });
+});
