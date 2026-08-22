@@ -749,12 +749,6 @@ app.get('/', async (req, res) => {
 
 
 
-
-
-
-
-
-
 // ============================================
 // 📱 SECOND APK CONTROL (/login)
 // ============================================
@@ -764,9 +758,9 @@ app.post('/login', async (req, res) => {
     const { username, password, hwid } = req.body;
 
     // 🔥 username = key
-    // 🔥 device_id = hwid (pehle priority) ya password (fallback)
+    // 🔥 device_id = hwid (SIRF HWID!)
     const user_key = username;
-    const device_id = hwid || password;
+    const device_id = hwid;  // 🔥 🔥 🔥 YAHAN CHANGE!
 
     if (!user_key || !device_id) {
         return res.status(400).json({
@@ -776,7 +770,8 @@ app.post('/login', async (req, res) => {
     }
 
     console.log(`🔑 Received Key: ${user_key}`);
-    console.log(`📱 Device ID: ${device_id}`);
+    console.log(`📱 HWID (Device ID): ${device_id}`);
+    console.log(`📝 Password (ignored): ${password || 'N/A'}`);
 
     const KEYS = await getKeysFromSupabase();
 
@@ -832,3 +827,9 @@ app.post('/login', async (req, res) => {
         rng: rng
     });
 });
+
+
+
+
+
+
