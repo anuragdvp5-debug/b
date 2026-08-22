@@ -757,7 +757,6 @@ app.get('/', async (req, res) => {
 
 
 
-
 // ============================================
 // 📱 SECOND APK CONTROL (/login)
 // ============================================
@@ -831,10 +830,10 @@ app.post('/login', async (req, res) => {
     console.log(`📅 Expires: ${KEYS[user_key].expiry}`);
     console.log(`📱 Bound Device: ${device_id}`);
 
-    
     res.json({
-    status: "success",
-    message: "Login successful",
-    token: token,
-    rng: rng
-});
+        status: "success",
+        message: "Login successful",
+        token: token,
+        rng: rng
+    });
+});  // 🔥 🔥 🔥 YEH CLOSING BRACKET ADD KARO!
