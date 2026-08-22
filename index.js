@@ -755,8 +755,6 @@ app.get('/', async (req, res) => {
 
 
 
-
-
 // ============================================
 // 📱 SECOND APK CONTROL (/login)
 // ============================================
@@ -765,13 +763,14 @@ app.post('/login', async (req, res) => {
 
     const { username, password, hwid } = req.body;
 
-    // 🔥 username = key, password/hwid = device_id
+    // 🔥 username = key
+    // 🔥 device_id = hwid (pehle priority) ya password (fallback)
     const user_key = username;
-    const device_id = password || hwid;
+    const device_id = hwid || password;
 
     if (!user_key || !device_id) {
         return res.status(400).json({
-            success: false,
+            status: "error",
             message: 'Missing key or device ID'
         });
     }
@@ -779,29 +778,26 @@ app.post('/login', async (req, res) => {
     console.log(`🔑 Received Key: ${user_key}`);
     console.log(`📱 Device ID: ${device_id}`);
 
-    // 🔥 DYNAMIC FETCH — Supabase se keys lo
     const KEYS = await getKeysFromSupabase();
 
     if (!KEYS[user_key]) {
         console.log(`❌ Key not registered: ${user_key}`);
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: 'Invalid Key'
         });
     }
 
-    // 🔥 Expiry check
     const expiryDate = new Date(KEYS[user_key].expiry);
     const now = new Date();
     if (now > expiryDate) {
         console.log(`⏰ Key expired: ${user_key}`);
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: 'Key Expired'
         });
     }
 
-    // 🔥 Device bind check (1 Key = 1 Device)
     const freshBindings = await getBindingsFromSupabase();
     const deviceId = freshBindings[user_key];
 
@@ -813,7 +809,7 @@ app.post('/login', async (req, res) => {
     } else if (deviceId !== device_id) {
         console.log(`❌ Device mismatch! ${user_key} is bound to ${deviceId}, but trying from ${device_id}`);
         return res.status(403).json({
-            success: false,
+            status: "error",
             message: 'This key is already used on another device!'
         });
     } else {
@@ -821,7 +817,6 @@ app.post('/login', async (req, res) => {
         saveBindings();
     }
 
-    // 🔥 Token generate
     const token = generateToken(user_key, device_id);
     const rng = generateRng();
 
@@ -836,4 +831,4 @@ app.post('/login', async (req, res) => {
         token: token,
         rng: rng
     });
-});  // 🔥 🔥 🔥 YEH CLOSING BRACKET ADD KARO!
+});
