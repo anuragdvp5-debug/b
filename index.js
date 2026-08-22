@@ -19,6 +19,7 @@ const supabase = createClient(
     process.env.SUPABASE_KEY
 );
 
+
 // ==================== BINDINGS ====================
 const BINDINGS_FILE = './bindings.json';
 let bindings = {};
