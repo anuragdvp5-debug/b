@@ -832,10 +832,8 @@ app.post('/login', async (req, res) => {
 
     
     res.json({
-        success: true,
-        data: {
-            token: token,
-            rng: rng
-        }
-    });
+    status: "success",
+    message: "Login successful",
+    token: token,
+    rng: rng
 });
